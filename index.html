@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>得点板 - Score Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'DSEG7-Classic';
+    src: url('data:font/woff2;base64,d09GMgABAAAAABREAA4AAAAAWugAABPpAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP0ZGVE0cGhwGYACCcggEEQgKumCmLAuBEgABNgIkA4E2BCAF8AcHgTIbKk+joqSzqWAkQtg4ACLaycV/TNAkroVr80AlJkpPmR5EiaJzKWtiLkKldZvoaeZF/flrCw7h2R0Llj8uHOYYDY28mD78uv/Oxcw8UvEnLpTIthFsYCjrUNeNCuX/vJBBdjm39+9AqkRuLnElVgLaFGVKSDVYPw8fY+79P7Ek2oZrmmTE8m6VkllKHJ2SyJCpNI6SgIzdfl8JBhQgRRxEXpBQl7AwC/2woaIkHXCPC2AqEdr9a1C48v4v3etHvU21w/3MjCCf77h62MgxEwIO4LxL9UaGxegMEicJ+1y3Fyn+1/J7xbNPlcIrASLZHodMXYZKBJkAs7en+9670v33j36IU+PnkEc5dPdMv7yrkHe/Q94yMo5MISHHjERNgGXmMjVKxQ1YyMzUm0wt2/1/6OLAMYoRRjF649CxstoNzTbn1+t17ftK0nYxizFCDGJwhRiMCTx9bWp6jRlms4TXW/tnJZC0v0QACABv3oMC4LnVo3kAPg6/eYAAAEDFhAMogAAIgBfczHklsjyZC5yOvQD5cRIUoIQCEEj4NQHA3HNQPrYwcjcfWI4OAbKB0ImBz1hEXd0hsEOJ+GlycwAdHQbwy2hYRjXYpMAnLaeP4sSvn8M1V5xwwD4TwuWYlDEWNmwHKt0uYEX03y+UId1inqdTxs0MbZPZYn0s9Se9PxAMhSPRWDyRBICU9GE2ly8US+VKtVZvNFvtTrfn5x8QGBSMy//hqcu7+vMogPzDwWD21OeFDAHpD/nYK3YDGZSjuxMiSiC8qazmJHkhGlMiUhDfG7ChgA44NDxw4rob/LKV64SSKM6VRPloCInJhY9COIEh+gctGomjLiAq13Ia/p8fOhBlxDlhHGVOyj1yqclBTkJRH+Dqv0jMFaM/o0pBzecbfMX+MaNCZwb198vk6Gr3+vh008zERs/aWEqs0hxH0jsSlowj6Xvy8Vi5gr6UxuJZukMUlni2flsukSBfqSDdPQ0TsYG5ebigEbDsCXkPzXsFDkiQ5elompYNT0MmfEVqZTqr/MLn96unMt+vOXE17FEfW36jyi5MN+2VuRLaW5Rm6ULVXfT+xdnkImV3mm7XdU8FVTf+N8FiClYCuGKJdmykRynJ2Al74urzCt2fQHoWySvJ5P+672R53Ma5T36CraDZyY3JXJ5aS6P/RFYzVqY3ND+o8bR4/ho9Sd36+k8h/sHkSmtCRqteNhH7zrAcH/O6jp+92hccda9/PHhlj3+cfjyMPq4FOJe4r21IdYOAfW/G1iu3wfsdSjYMO3w8YfKBJpMI29UKz1Ku8mnq4NKUHsrXSDjBiHQ6Y1HGVuZrrW42MlAzpmySkx152w57CRHhtZOjLQYtq5218zbGnjY1cupK12SLF/aZ8YySHKU7ueNBjog6h4MMipRxdvoMv5XEzKmUCi3ho7BSb4NknO6e8c1oInWtZ7nG6slXd5kpM/wxg1Kf2TO/9MXNwnmG/sNcSXdJN6HJ6wlDE0Xm5Ad6skl34LXH/sl09qSa3vd2Mrp8unuh7Pi+sGDV/p6gfk44jfVo7Fqu8UdpjjbyR6KM8rkJAAc/ctivUTz/NScznp96g/+FfvVaGQqBYS7ohi1kJEbd9NzJr8UYOxgDQO4AT4EdR978vPyfY8upZA9ip+N8Z/c9trHZjYO3Lcvkbf2g7lPnYQAzdiSYc4zRU/dYAwDAFhGbm55mSUmofSspyd+SycfWkjPHk1Kgiu+lyJSZUi6QJ0oVa34u1U2L8KDUcFzeeGEj1eU5CkhRDuCYSErC4UFJaayWzObgl1wirpQCW3wpRbHkpdwoA0qVTN4s1auR5K/UKF1ufbGNbJds/N+') format('woff2'),
+         url('./fonts/DSEG7Classic-Regular.woff2') format('woff2'),
+         url('./fonts/DSEG7Classic-Regular.woff') format('woff'),
+         url('./fonts/DSEG7Classic-Regular.ttf') format('truetype');
+    font-weight: 400; font-style: normal; font-display: block;
+  }
+  @font-face {
+    font-family: 'DSEG7-Classic';
+    src: url('data:font/woff2;base64,d09GMgABAAAAABQMAA4AAAAAWgAAABOxAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP0ZGVE0cGhwGYACCcggEEQgKuRilZguBEgABNgIkA4E2BCAF72YHgTIbw04jA8HGAQh5fv0iKknrCv5bAodjyObBNMtgGNKl1aJERCtDEAN6YJfqaNsT9d3q/ezF8seFeWpDMBEOphkj8Vx4ILvPN9jdgzn3T3TsTlVcJlVyVUq1cmlUUmceoGNfb+aHbkfQUiT4imzjgZ4dRtEBVtAB/4u1tYhIgubaqO6JkBmaWRSNGrWSyJ547Z+ufeb/zn2856WLLGzUibfAjA94uTAoXABTbnBklWIQ0AqZrNP9DzA+sPL+t6mWWcuk8/SF5FvZZBCxLkSYljJ+L5tN/+Osy0nbw4zhtXJqPXkp9z/GiOCNbbGSSZZI8f9/7fvU1W9C8IIWSwVtVuSQUTEirt+pc/bt/8+cX/MBa1UqwG+IO3Ch7qPq7gECGUlEamyMSRShzfIRDtjFZhVbpcJsu3dXJKpOCCGY4DUeYzK+yIp636sRm4opotWDMdHkFSnbjxAgAA/+L7wCcLv5Q4Gntz9XAABegmgggQAC6EQ0+pwUt7g3nmD/+pOI73qCBMktAfNTFT4+PeeNiziu2qnEH4zNgmY9VE2jOFNLjRrGsErF9L3UeoAfPwrEM8qMmbbDqcwQJ5tLrWmz00/efXh5uroYC446keY0kbhC5JlnQiXZn4GVxrHMJ/qx4AIBeZhQ5qb+pBclWVE13TAtG4As2Z1+EEZxkmZ5UVZ103b94Kyrb2hs4uh/uNnRm8bH7QAig4VRy4c/jCgBnGPA/UYXDZgRLL25YJMs1u8razQnUtim4rQsBO9GamyRI005nDrz7A19dLrtR3DsafK2YU+Fg6Cs3bkcOhTCj/AXWQuIOQDVkUQky4G568ubJPDkVu5+/ppuO9n/ufS0vPUQxfLYGuzx6gs/Kj8Plt31aFaZjze91TCfT1aZUfSEAuMZHETvUNLSI9TFAopMi2Gm5WiPkBBmu4yaEadtjDFkePHSfBanDY6B+sMpAxiWZ38IzwmBBkavASSJ84Ve8l56AOXfc09i9St+9wnGi3GPNxz+jM7kTpLpA0s5kYSB2VPbWkorvIustG1Nc98XtzxHOz6MDwec45POVHGKl0Qs9ykbnFdpVtnI855xQ3xreFSppzpT3HmnJ7GH19racPXr2tU/Jak88RmAtG8qfkaa/dMnf9JM65E7/PJrYkU4fhOW3k/rz9aLaHK8SI5iMmykoyaO5M/+/xMXGlpoGh1PwlONnDfEwd9fzI2u6Dp5tSu65INAxtU6eiyG4eBaJ9Krsk0Vd4lX5GtfHSe8jDzSuBQMJcCTOGbLZYpC1qUdC69F/DHcrq1HBjVRbdkuruoTpx9xtP/wRWfWKPvt8RE4tNEP/speTxxXSJPKvM9bJNK4XZL1POdrwmH2dH4rw852Og5JAi0e38xex36POnFGNgPp1zZfpWlUcYB8NOFDCR5+ujaxm7088780npG+OkjlWeOBY5Xv/LPsq9vrkxIZS44+0ukAOeMfAcvn3pd43PP3HoFBr59eS6zh1s86ghd/QoqK/zwKwOa34t3Ch3xWxT+i3m2Fni1zjvw8nBm4kVuCvIG54Upan9aH+Mbi5xMYVkE8QGwA3EJ1L1/wJP9fAPMH0L3rR8Lh5PBKtzQO4fzixV6Y3/nD2R9+ngAtDAebvjR++BoGAISFFNJtrT2hUvD2tpS0X6ViwmSpBYQzpcUrvCpt/tGvdJcQl5VeQuPZ0jtHooqlj4jB/ZMH8ho8QoJIugO7CJVChBul5OZbqUz4X2pJYX9pCQvXS1tC+FS6a4gJpRcT95XetR70vdJHweD4YAcKGzxgjjMVxMpICzUm6BNRPW/HSsCBl/XQC5bk9Tcvtgg6VTuGZnpZNrh15EiX87Dup1F') format('woff2'),
+         url('./fonts/DSEG7Classic-Bold.woff2') format('woff2');
+    font-weight: 700; font-style: normal; font-display: block;
+  }
+  :root {
+    --red: #e30613;
+    --blue: #0081ff;
+    --digit: #fff;
+    --board-ratio: 1.2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Noto Sans JP", sans-serif;
+    color: #fff;
+    overflow: hidden;
+  }
+  .board-wrap {
+    width: 100vw;
+    height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+  .scoreboard {
+    width: min(100vw, calc(100dvh * var(--board-ratio)));
+    height: min(100dvh, calc(100vw / var(--board-ratio)));
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* タイマー - 上下余白を狭く */
+  .timer-area {
+    flex: 0 0 auto;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.2vh 0;
+    border-bottom: 10px solid #000;
+    min-height: 0;
+  }
+  .timer {
+    font-family: 'DSEG7-Classic', monospace;
+    font-weight: 700;
+    font-size: min(40vh, 36vw, 380px);
+    line-height: 1;
+    color: var(--digit);
+    letter-spacing: 0;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: 100%;
+    padding: 0 1vw;
+  }
+  #timerMin { text-align: right; }
+  #timerSec { text-align: left; }
+  .timer .colon { text-align: center; min-width: 0.4em; }
+  /* スコア */
+  .scores {
+    flex: 0.85;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    background: #000;
+    min-height: 0;
+  }
+  .team {
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    min-height: 0;
+  }
+  .team.red { background: var(--red); }
+  .team.blue { background: var(--blue); }
+  .team-inner-black {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
+    padding: 1vh 0;
+  }
+  .score {
+    font-family: "Noto Sans JP", sans-serif;
+    font-weight: 700;
+    font-size: min(16vh, 14vw, 150px);
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .team-name {
+    text-align: center;
+    font-size: min(4.2vh, 3.5vw, 36px);
+    font-weight: 900;
+    padding: 1.2vh 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (max-width: 600px) {
+    .timer { font-size: min(22vh, 28vw, 160px); }
+    .score { font-size: min(14vh, 18vw, 90px); }
+  }
+  .board-wrap:fullscreen { background: #000; }
+  .board-wrap:fullscreen .scoreboard {
+    width: min(100vw, calc(100dvh * var(--board-ratio)));
+    height: min(100dvh, calc(100vw / var(--board-ratio)));
+  }
+  #hint {
+    position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff; font-size: 11px;
+    padding: 4px 10px; border-radius: 100px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+  <div class="board-wrap" id="boardWrap">
+    <div class="scoreboard">
+      <div class="timer-area">
+        <div class="timer" id="timerDisplay"><span id="timerMin">4</span><span class="colon">:</span><span id="timerSec">36</span></div>
+      </div>
+      <div class="scores">
+        <div class="team red">
+          <div class="team-inner-black"><div class="score" id="scoreRed">215</div></div>
+          <div class="team-name" id="nameRed">福島 A</div>
+        </div>
+        <div class="team blue">
+          <div class="team-inner-black"><div class="score" id="scoreBlue">165</div></div>
+          <div class="team-name" id="nameBlue">秋田 B</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="hint">control.htmlで操作 | F:全画面</div>
+<script>
+const $ = s=>document.getElementById(s);
+const timerMinEl=$('timerMin'), timerSecEl=$('timerSec'), scoreRedEl=$('scoreRed'), scoreBlueEl=$('scoreBlue'), nameRedEl=$('nameRed'), nameBlueEl=$('nameBlue'), boardWrap=$('boardWrap'), hintEl=$('hint');
+const STORAGE_KEY='scoreboard-state', CHANNEL_NAME='scoreboard';
+let initialSeconds=4*60+36, remaining=4*60+36, isRunning=false, scores={red:215,blue:165}, names={red:"福島 A",blue:"秋田 B"}, timerId=null;
+let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
+function fmt(s){ const m=Math.floor(s/60), sec=s%60; return {m:String(m), s:String(sec).padStart(2,'0')} }
+function renderTimer(){ const {m,s}=fmt(remaining); timerMinEl.textContent=m; timerSecEl.textContent=s; }
+function renderScores(){ scoreRedEl.textContent=scores.red; scoreBlueEl.textContent=scores.blue; nameRedEl.textContent=names.red||'RED'; nameBlueEl.textContent=names.blue||'BLUE'; }
+function renderAll(){ renderTimer(); renderScores(); }
+function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds,remaining,isRunning,scores,names})); }catch{} }
+function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.initialSeconds!==undefined)initialSeconds=s.initialSeconds; if(s.remaining!==undefined)remaining=s.remaining; if(s.isRunning!==undefined)isRunning=s.isRunning; if(s.scores)scores=s.scores; if(s.names)names=s.names; } }catch{} }
+function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
+let audioCtx; function beep(){ try{ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='square';o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3);o.start();o.stop(audioCtx.currentTime+0.3);}catch{} }
+function tick(){ if(remaining<=0){stop();remaining=0;renderTimer();beep();broadcastTick();return} remaining--; renderTimer(); broadcastTick(); if(remaining<=0){stop();beep();setTimeout(beep,400);setTimeout(beep,800);save();} }
+function start(){ if(isRunning||remaining<=0)return; isRunning=true; timerId=setInterval(tick,1000); save(); broadcastTick(); }
+function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; save(); broadcastTick(); }
+function reset(){ stop(); remaining=initialSeconds; renderTimer(); save(); broadcastTick(); }
+function setTime(m,s){ const mm=Math.max(0,Math.min(99,m)), ss=Math.max(0,Math.min(59,s)); initialSeconds=mm*60+ss; remaining=initialSeconds; isRunning=false; if(timerId)clearInterval(timerId); timerId=null; renderTimer(); save(); broadcastTick(); }
+function applyState(s){ if(s.initialSeconds!==undefined)initialSeconds=s.initialSeconds; if(s.remaining!==undefined)remaining=s.remaining; if(s.isRunning!==undefined){ if(s.isRunning&&!isRunning){isRunning=true; if(!timerId)timerId=setInterval(tick,1000);} else if(!s.isRunning&&isRunning){isRunning=false; if(timerId)clearInterval(timerId); timerId=null;} else isRunning=s.isRunning; } if(s.scores)scores=s.scores; if(s.names)names=s.names; renderAll(); }
+if(bc) bc.onmessage=e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } };
+window.addEventListener('message',e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } });
+window.addEventListener('storage',e=>{ if(e.key===STORAGE_KEY&&e.newValue){ try{applyState(JSON.parse(e.newValue))}catch{} } });
+document.addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement)boardWrap.requestFullscreen?.(); else document.exitFullscreen?.(); } });
+boardWrap.addEventListener('dblclick',()=>{ if(!document.fullscreenElement)boardWrap.requestFullscreen?.(); else document.exitFullscreen?.(); });
+function showHint(){ hintEl.style.opacity='1'; setTimeout(()=>hintEl.style.opacity='0',2500); }
+setTimeout(showHint,600);
+load(); renderAll(); if(isRunning) timerId=setInterval(tick,1000);
+setTimeout(()=>{ const m={type:'display-ready'}; if(bc)try{bc.postMessage(m)}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} },300);
+</script>
+</body>
+</html>

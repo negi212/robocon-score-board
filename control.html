@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>コントローラー - Score Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+JP:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'DSEG7-Classic';
+    src: url('data:font/woff2;base64,d09GMgABAAAAABREAA4AAAAAWugAABPpAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP0ZGVE0cGhwGYACCcggEEQgKumCmLAuBEgABNgIkA4E2BCAF8AcHgTIbKk+joqSzqWAkQtg4ACLaycV/TNAkroVr80AlJkpPmR5EiaJzKWtiLkKldZvoaeZF/flrCw7h2R0Llj8uHOYYDY28mD78uv/Oxcw8UvEnLpTIthFsYCjrUNeNCuX/vJBBdjm39+9AqkRuLnElVgLaFGVKSDVYPw8fY+79P7Ek2oZrmmTE8m6VkllKHJ2SyJCpNI6SgIzdfl8JBhQgRRxEXpBQl7AwC/2woaIkHXCPC2AqEdr9a1C48v4v3etHvU21w/3MjCCf77h62MgxEwIO4LxL9UaGxegMEicJ+1y3Fyn+1/J7xbNPlcIrASLZHodMXYZKBJkAs7en+9670v33j36IU+PnkEc5dPdMv7yrkHe/Q94yMo5MISHHjERNgGXmMjVKxQ1YyMzUm0wt2/1/6OLAMYoRRjF649CxstoNzTbn1+t17ftK0nYxizFCDGJwhRiMCTx9bWp6jRlms4TXW/tnJZC0v0QACABv3oMC4LnVo3kAPg6/eYAAAEDFhAMogAAIgBfczHklsjyZC5yOvQD5cRIUoIQCEEj4NQHA3HNQPrYwcjcfWI4OAbKB0ImBz1hEXd0hsEOJ+GlycwAdHQbwy2hYRjXYpMAnLaeP4sSvn8M1V5xwwD4TwuWYlDEWNmwHKt0uYEX03y+UId1inqdTxs0MbZPZYn0s9Se9PxAMhSPRWDyRBICU9GE2ly8US+VKtVZvNFvtTrfn5x8QGBSMy//hqcu7+vMogPzDwWD21OeFDAHpD/nYK3YDGZSjuxMiSiC8qazmJHkhGlMiUhDfG7ChgA44NDxw4rob/LKV64SSKM6VRPloCInJhY9COIEh+gctGomjLiAq13Ia/p8fOhBlxDlhHGVOyj1yqclBTkJRH+Dqv0jMFaM/o0pBzecbfMX+MaNCZwb198vk6Gr3+vh008zERs/aWEqs0hxH0jsSlowj6Xvy8Vi5gr6UxuJZukMUlni2flsukSBfqSDdPQ0TsYG5ebigEbDsCXkPzXsFDkiQ5elompYNT0MmfEVqZTqr/MLn96unMt+vOXE17FEfW36jyi5MN+2VuRLaW5Rm6ULVXfT+xdnkImV3mm7XdU8FVTf+N8FiClYCuGKJdmykRynJ2Al74urzCt2fQHoWySvJ5P+672R53Ma5T36CraDZyY3JXJ5aS6P/RFYzVqY3ND+o8bR4/ho9Sd36+k8h/sHkSmtCRqteNhH7zrAcH/O6jp+92hccda9/PHhlj3+cfjyMPq4FOJe4r21IdYOAfW/G1iu3wfsdSjYMO3w8YfKBJpMI29UKz1Ku8mnq4NKUHsrXSDjBiHQ6Y1HGVuZrrW42MlAzpmySkx152w57CRHhtZOjLQYtq5218zbGnjY1cupK12SLF/aZ8YySHKU7ueNBjog6h4MMipRxdvoMv5XEzKmUCi3ho7BSb4NknO6e8c1oInWtZ7nG6slXd5kpM/wxg1Kf2TO/9MXNwnmG/sNcSXdJN6HJ6wlDE0Xm5Ad6skl34LXH/sl09qSa3vd2Mrp8unuh7Pi+sGDV/p6gfk44jfVo7Fqu8UdpjjbyR6KM8rkJAAc/ctivUTz/NScznp96g/+FfvVaGQqBYS7ohi1kJEbd9NzJr8UYOxgDQO4AT4EdR978vPyfY8upZA9ip+N8Z/c9trHZjYO3Lcvkbf2g7lPnYQAzdiSYc4zRU/dYAwDAFhGbm55mSUmofSspyd+SycfWkjPHk1Kgiu+lyJSZUi6QJ0oVa34u1U2L8KDUcFzeeGEj1eU5CkhRDuCYSErC4UFJaayWzObgl1wirpQCW3wpRbHkpdwoA0qVTN4s1auR5K/UKF1ufbGNbJds/N+') format('woff2'),
+         url('./fonts/DSEG7Classic-Regular.woff2') format('woff2'),
+         url('./fonts/DSEG7Classic-Regular.woff') format('woff'),
+         url('./fonts/DSEG7Classic-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+  }
+  @font-face {
+    font-family: 'DSEG7-Classic';
+    src: url('data:font/woff2;base64,d09GMgABAAAAABQMAA4AAAAAWgAAABOxAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP0ZGVE0cGhwGYACCcggEEQgKuRilZguBEgABNgIkA4E2BCAF72YHgTIbw04jA8HGAQh5fv0iKknrCv5bAodjyObBNMtgGNKl1aJERCtDEAN6YJfqaNsT9d3q/ezF8seFeWpDMBEOphkj8Vx4ILvPN9jdgzn3T3TsTlVcJlVyVUq1cmlUUmceoGNfb+aHbkfQUiT4imzjgZ4dRtEBVtAB/4u1tYhIgubaqO6JkBmaWRSNGrWSyJ547Z+ufeb/zn2856WLLGzUibfAjA94uTAoXABTbnBklWIQ0AqZrNP9DzA+sPL+t6mWWcuk8/SF5FvZZBCxLkSYljJ+L5tN/+Osy0nbw4zhtXJqPXkp9z/GiOCNbbGSSZZI8f9/7fvU1W9C8IIWSwVtVuSQUTEirt+pc/bt/8+cX/MBa1UqwG+IO3Ch7qPq7gECGUlEamyMSRShzfIRDtjFZhVbpcJsu3dXJKpOCCGY4DUeYzK+yIp636sRm4opotWDMdHkFSnbjxAgAA/+L7wCcLv5Q4Gntz9XAABegmgggQAC6EQ0+pwUt7g3nmD/+pOI73qCBMktAfNTFT4+PeeNiziu2qnEH4zNgmY9VE2jOFNLjRrGsErF9L3UeoAfPwrEM8qMmbbDqcwQJ5tLrWmz00/efXh5uroYC446keY0kbhC5JlnQiXZn4GVxrHMJ/qx4AIBeZhQ5qb+pBclWVE13TAtG4As2Z1+EEZxkmZ5UVZ103b94Kyrb2hs4uh/uNnRm8bH7QAig4VRy4c/jCgBnGPA/UYXDZgRLL25YJMs1u8razQnUtim4rQsBO9GamyRI005nDrz7A19dLrtR3DsafK2YU+Fg6Cs3bkcOhTCj/AXWQuIOQDVkUQky4G568ubJPDkVu5+/ppuO9n/ufS0vPUQxfLYGuzx6gs/Kj8Plt31aFaZjze91TCfT1aZUfSEAuMZHETvUNLSI9TFAopMi2Gm5WiPkBBmu4yaEadtjDFkePHSfBanDY6B+sMpAxiWZ38IzwmBBkavASSJ84Ve8l56AOXfc09i9St+9wnGi3GPNxz+jM7kTpLpA0s5kYSB2VPbWkorvIustG1Nc98XtzxHOz6MDwec45POVHGKl0Qs9ykbnFdpVtnI855xQ3xreFSppzpT3HmnJ7GH19racPXr2tU/Jak88RmAtG8qfkaa/dMnf9JM65E7/PJrYkU4fhOW3k/rz9aLaHK8SI5iMmykoyaO5M/+/xMXGlpoGh1PwlONnDfEwd9fzI2u6Dp5tSu65INAxtU6eiyG4eBaJ9Krsk0Vd4lX5GtfHSe8jDzSuBQMJcCTOGbLZYpC1qUdC69F/DHcrq1HBjVRbdkuruoTpx9xtP/wRWfWKPvt8RE4tNEP/speTxxXSJPKvM9bJNK4XZL1POdrwmH2dH4rw852Og5JAi0e38xex36POnFGNgPp1zZfpWlUcYB8NOFDCR5+ujaxm7088780npG+OkjlWeOBY5Xv/LPsq9vrkxIZS44+0ukAOeMfAcvn3pd43PP3HoFBr59eS6zh1s86ghd/QoqK/zwKwOa34t3Ch3xWxT+i3m2Fni1zjvw8nBm4kVuCvIG54Upan9aH+Mbi5xMYVkE8QGwA3EJ1L1/wJP9fAPMH0L3rR8Lh5PBKtzQO4fzixV6Y3/nD2R9+ngAtDAebvjR++BoGAISFFNJtrT2hUvD2tpS0X6ViwmSpBYQzpcUrvCpt/tGvdJcQl5VeQuPZ0jtHooqlj4jB/ZMH8ho8QoJIugO7CJVChBul5OZbqUz4X2pJYX9pCQvXS1tC+FS6a4gJpRcT95XetR70vdJHweD4YAcKGzxgjjMVxMpICzUm6BNRPW/HSsCBl/XQC5bk9Tcvtgg6VTuGZnpZNrh15EiX87Dup1F') format('woff2'),
+         url('./fonts/DSEG7Classic-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: block;
+  }
+  :root {
+    --red: #e30613;
+    --blue: #0081ff;
+    --digit: #fff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: "Noto Sans JP", sans-serif;
+    padding: 16px;
+    min-height: 100vh;
+  }
+  h1 {
+    text-align: center;
+    font-size: 14px;
+    letter-spacing: 0.3em;
+    opacity: 0.6;
+    margin-bottom: 12px;
+  }
+  .open-display {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .btn-open {
+    background: #fff;
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 900;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .preview {
+    width: 360px;
+    max-width: 92vw;
+    margin: 0 auto 20px;
+    background: #000;
+    border: 2px solid #222;
+    overflow: hidden;
+  }
+  .preview .timer-area {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    border-bottom: 6px solid #000;
+  }
+  .preview .timer {
+    font-family: 'DSEG7-Classic', monospace;
+    font-weight: 700;
+    font-size: 78px;
+    color: var(--digit);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: 100%;
+    padding: 0 8px;
+    letter-spacing: 0;
+  }
+  .preview #pTimerMin { text-align: right; }
+  .preview #pTimerSec { text-align: left; }
+  .preview .colon { text-align: center; min-width: 0.35em; }
+  .preview .scores {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .preview .team {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+  .preview .team.red { background: var(--red); }
+  .preview .team.blue { background: var(--blue); }
+  .preview .team-inner-black {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    flex: 1;
+  }
+  .preview .score {
+    font-family: "Noto Sans JP", sans-serif;
+    font-weight: 700;
+    font-size: 84px;
+    color: #fff;
+    line-height: 1;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .preview .team-name {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 900;
+    padding: 6px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .controls {
+    width: min(560px, 92vw);
+    margin: 0 auto;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .controls h2 { font-size: 13px; letter-spacing: 0.2em; opacity: 0.6; margin-bottom: 14px; text-align: center; }
+  .control-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px; }
+  .btn { appearance: none; border: none; border-radius: 8px; padding: 10px 16px; font-family: "Noto Sans JP", sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: #fff; color: #111; }
+  .btn-dark { background: #2a2a2a; color: #fff; border: 1px solid #3a3a3a; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .score-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .team-control { background: #111; border-radius: 10px; padding: 12px; border: 1px solid #2a2a2a; text-align: center; }
+  .team-control.red { border-color: rgba(227,6,19,0.4); }
+  .team-control.blue { border-color: rgba(0,129,255,0.4); }
+  .team-control-label { font-size: 12px; font-weight: 700; letter-spacing: 0.15em; opacity: 0.7; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.red { background: var(--red); } .dot.blue { background: var(--blue); }
+  .team-control .score-btns { display: flex; gap: 6px; justify-content: center; }
+  .team-control .score-btns .btn { flex: 1; justify-content: center; padding: 10px 0; font-size: 18px; }
+  .team-input { width: 100%; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; color: #fff; text-align: center; padding: 6px; font-family: "Noto Sans JP", sans-serif; font-weight: 700; font-size: 14px; margin-top: 8px; }
+  .timer-setup { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 12px; font-size: 13px; opacity: 0.9; }
+  .timer-setup input { width: 70px; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; color: #fff; text-align: center; padding: 6px; font-family: "Share Tech Mono", monospace; font-size: 16px; }
+  .preset-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .preset-btn { font-size: 12px; padding: 6px 10px; background: #2a2a2a; color: #aaa; border: 1px solid #333; border-radius: 100px; cursor: pointer; }
+  .preset-btn:hover { color: #fff; border-color: #555; }
+  .hint { text-align: center; font-size: 11px; opacity: 0.35; margin-top: 14px; line-height: 1.6; }
+  .status { text-align: center; font-size: 11px; opacity: 0.6; margin-bottom: 12px; }
+  .status .dot-live { display:inline-block; width:8px; height:8px; border-radius:50%; background:#0f0; margin-right:6px; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
+</head>
+<body>
+  <h1>CONTROLLER</h1>
+  <div class="open-display">
+    <button class="btn-open" id="btnOpenDisplay">⛶ 表示画面を開く（別ウィンドウ）</button>
+  </div>
+  <div class="status"><span class="dot-live"></span><span id="statusText">表示画面を待機中...</span></div>
+
+  <!-- プレビュー -->
+  <div class="preview" id="preview">
+    <div class="timer-area">
+      <div class="timer"><span id="pTimerMin">4</span><span class="colon">:</span><span id="pTimerSec">36</span></div>
+    </div>
+    <div class="scores">
+      <div class="team red">
+        <div class="team-inner-black"><div class="score" id="pScoreRed">215</div></div>
+        <div class="team-name" id="pNameRed">福島 A</div>
+      </div>
+      <div class="team blue">
+        <div class="team-inner-black"><div class="score" id="pScoreBlue">165</div></div>
+        <div class="team-name" id="pNameBlue">秋田 B</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <h2>コントロール</h2>
+    <div class="timer-setup">
+      <span>タイマー設定</span>
+      <input type="number" id="inputMin" min="0" max="99" value="4"> 分
+      <input type="number" id="inputSec" min="0" max="59" value="36"> 秒
+      <button class="btn btn-dark" id="btnSetTime" style="padding:6px 12px; font-size:13px;">セット</button>
+    </div>
+    <div class="preset-row">
+      <button class="preset-btn" data-preset="03:00">3:00</button>
+      <button class="preset-btn" data-preset="04:00">4:00</button>
+      <button class="preset-btn" data-preset="05:00">5:00</button>
+      <button class="preset-btn" data-preset="04:36">4:36 画像再現</button>
+      <button class="preset-btn" data-preset="10:00">10:00</button>
+    </div>
+    <div class="control-row">
+      <button class="btn btn-primary" id="btnStart">▶ スタート</button>
+      <button class="btn btn-dark" id="btnPause" disabled>⏸ 一時停止</button>
+      <button class="btn btn-dark" id="btnReset">↺ リセット</button>
+      <button class="btn btn-dark" id="btnFullscreen">⛶ 表示を全画面</button>
+    </div>
+    <div class="score-controls">
+      <div class="team-control red">
+        <div class="team-control-label"><span class="dot red"></span> RED / 福島</div>
+        <div class="score-btns">
+          <button class="btn btn-dark" data-team="red" data-delta="-10">-10</button>
+          <button class="btn btn-dark" data-team="red" data-delta="-1">-1</button>
+          <button class="btn btn-red" data-team="red" data-delta="1">+1</button>
+          <button class="btn btn-red" data-team="red" data-delta="10">+10</button>
+        </div>
+        <input class="team-input" id="inputNameRed" value="福島 A" maxlength="12" placeholder="チーム名">
+        <div class="score-btns" style="margin-top:6px;"><button class="btn btn-dark" style="font-size:12px; padding:6px;" id="btnResetRed">0にリセット</button></div>
+      </div>
+      <div class="team-control blue">
+        <div class="team-control-label"><span class="dot blue"></span> BLUE / 秋田</div>
+        <div class="score-btns">
+          <button class="btn btn-dark" data-team="blue" data-delta="-10">-10</button>
+          <button class="btn btn-dark" data-team="blue" data-delta="-1">-1</button>
+          <button class="btn btn-blue" data-team="blue" data-delta="1">+1</button>
+          <button class="btn btn-blue" data-team="blue" data-delta="10">+10</button>
+        </div>
+        <input class="team-input" id="inputNameBlue" value="秋田 B" maxlength="12" placeholder="チーム名">
+        <div class="score-btns" style="margin-top:6px;"><button class="btn btn-dark" style="font-size:12px; padding:6px;" id="btnResetBlue">0にリセット</button></div>
+      </div>
+    </div>
+    <div class="control-row">
+      <button class="btn btn-dark" id="btnSwap">⇄ 入れ替え</button>
+      <button class="btn btn-dark" id="btnZeroBoth">両チーム 0点に戻す</button>
+    </div>
+    <div class="hint">
+      スペース: 開始/停止 | R: リセット | F: 表示を全画面<br>
+      別ウィンドウの表示画面（index.html）と自動同期。BroadcastChannel + localStorageでオフラインでも同期。
+    </div>
+  </div>
+
+<script>
+const STORAGE_KEY = 'scoreboard-state';
+const CHANNEL_NAME = 'scoreboard';
+
+// Elements - preview
+const pMin = document.getElementById('pTimerMin');
+const pSec = document.getElementById('pTimerSec');
+const pRed = document.getElementById('pScoreRed');
+const pBlue = document.getElementById('pScoreBlue');
+const pNameRed = document.getElementById('pNameRed');
+const pNameBlue = document.getElementById('pNameBlue');
+// Controls
+const inputMin = document.getElementById('inputMin');
+const inputSec = document.getElementById('inputSec');
+const inputNameRed = document.getElementById('inputNameRed');
+const inputNameBlue = document.getElementById('inputNameBlue');
+const btnStart = document.getElementById('btnStart');
+const btnPause = document.getElementById('btnPause');
+const btnReset = document.getElementById('btnReset');
+const btnSetTime = document.getElementById('btnSetTime');
+const btnFullscreen = document.getElementById('btnFullscreen');
+const btnOpenDisplay = document.getElementById('btnOpenDisplay');
+const statusText = document.getElementById('statusText');
+
+let displayWin = null;
+let bc = null;
+try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+let state = {
+  initialSeconds: 4*60+36,
+  remaining: 4*60+36,
+  isRunning: false,
+  scores: { red: 215, blue: 165 },
+  names: { red: "福島 A", blue: "秋田 B" }
+};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      // merge
+      state.initialSeconds = s.initialSeconds ?? state.initialSeconds;
+      state.remaining = s.remaining ?? state.remaining;
+      state.isRunning = s.isRunning ?? false;
+      state.scores = s.scores ?? state.scores;
+      state.names = s.names ?? state.names;
+    }
+  } catch {}
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  // broadcast
+  const msg = { type: 'state', state };
+  if (bc) try { bc.postMessage(msg); } catch {}
+  // also for window.open direct postMessage
+  if (displayWin && !displayWin.closed) {
+    try { displayWin.postMessage(msg, '*'); } catch {}
+  }
+}
+function broadcastCmd(action, payload={}) {
+  const msg = { type: 'cmd', action, ...payload };
+  if (bc) try { bc.postMessage(msg); } catch {}
+  if (displayWin && !displayWin.closed) try { displayWin.postMessage(msg, '*'); } catch {}
+  // also persist if needed
+}
+
+function formatTimer(sec) {
+  const m = Math.floor(sec/60);
+  const s = sec%60;
+  return { m: String(m), s: String(s).padStart(2,'0') };
+}
+function renderPreview() {
+  const { m, s } = formatTimer(state.remaining);
+  pMin.textContent = m;
+  pSec.textContent = s;
+  pRed.textContent = state.scores.red;
+  pBlue.textContent = state.scores.blue;
+  pNameRed.textContent = state.names.red || 'RED';
+  pNameBlue.textContent = state.names.blue || 'BLUE';
+  // inputs
+  inputNameRed.value = state.names.red;
+  inputNameBlue.value = state.names.blue;
+  const m0 = Math.floor(state.initialSeconds/60);
+  const s0 = state.initialSeconds%60;
+  // only update time inputs if not focused
+  if (document.activeElement !== inputMin) inputMin.value = m0;
+  if (document.activeElement !== inputSec) inputSec.value = s0;
+  btnStart.disabled = state.isRunning;
+  btnPause.disabled = !state.isRunning;
+}
+function renderAndSave() {
+  renderPreview();
+  saveState();
+}
+
+// Controls
+btnSetTime.addEventListener('click', () => {
+  const m = Math.max(0, Math.min(99, parseInt(inputMin.value)||0));
+  const s = Math.max(0, Math.min(59, parseInt(inputSec.value)||0));
+  state.initialSeconds = m*60+s;
+  state.remaining = state.initialSeconds;
+  state.isRunning = false;
+  broadcastCmd('setTime', { initialSeconds: state.initialSeconds, remaining: state.remaining });
+  renderAndSave();
+});
+document.querySelectorAll('.preset-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const [m,s]=b.dataset.preset.split(':').map(Number);
+    inputMin.value=m; inputSec.value=s;
+    btnSetTime.click();
+  });
+});
+btnStart.addEventListener('click', ()=>{
+  state.isRunning = true;
+  broadcastCmd('start');
+  renderAndSave();
+});
+btnPause.addEventListener('click', ()=>{
+  state.isRunning = false;
+  broadcastCmd('pause');
+  renderAndSave();
+});
+btnReset.addEventListener('click', ()=>{
+  state.remaining = state.initialSeconds;
+  state.isRunning = false;
+  broadcastCmd('reset');
+  renderAndSave();
+});
+btnFullscreen.addEventListener('click', ()=>{
+  // send fullscreen command to display
+  broadcastCmd('fullscreen');
+});
+
+// Scores
+document.querySelectorAll('[data-team][data-delta]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const team=btn.dataset.team;
+    const d=parseInt(btn.dataset.delta,10);
+    state.scores[team]=Math.max(0, Math.min(999, state.scores[team]+d));
+    renderAndSave();
+  });
+});
+document.getElementById('btnResetRed').addEventListener('click', ()=>{ state.scores.red=0; renderAndSave(); });
+document.getElementById('btnResetBlue').addEventListener('click', ()=>{ state.scores.blue=0; renderAndSave(); });
+document.getElementById('btnZeroBoth').addEventListener('click', ()=>{ state.scores.red=0; state.scores.blue=0; renderAndSave(); });
+document.getElementById('btnSwap').addEventListener('click', ()=>{
+  const ts=state.scores.red; state.scores.red=state.scores.blue; state.scores.blue=ts;
+  const tn=state.names.red; state.names.red=state.names.blue; state.names.blue=tn;
+  renderAndSave();
+});
+inputNameRed.addEventListener('input', ()=>{ state.names.red=inputNameRed.value; renderAndSave(); });
+inputNameBlue.addEventListener('input', ()=>{ state.names.blue=inputNameBlue.value; renderAndSave(); });
+
+btnOpenDisplay.addEventListener('click', ()=>{
+  displayWin = window.open('index.html', 'scoreboard-display');
+  statusText.textContent = '表示画面を開きました。別モニタに移動してください。';
+  // send current state after open
+  setTimeout(()=> saveState(), 500);
+});
+
+// Listen from display
+if (bc) {
+  bc.onmessage = (e)=>{
+    const msg=e.data;
+    if (!msg || !msg.type) return;
+    if (msg.type==='tick') {
+      // display ticking
+      state.remaining = msg.remaining;
+      state.isRunning = msg.isRunning;
+      renderPreview();
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+      statusText.textContent = `表示画面と同期中... ${formatTimer(state.remaining).m}:${formatTimer(state.remaining).s} ${state.isRunning?'●進行中':'○停止中'}`;
+    } else if (msg.type==='state') {
+      // display might have state? ignore or sync if needed
+    } else if (msg.type==='display-ready') {
+      // display requests sync
+      saveState();
+      statusText.textContent = '表示画面と接続しました';
+    }
+  };
+}
+window.addEventListener('message', (e)=>{
+  const msg=e.data;
+  if (!msg || !msg.type) return;
+  if (msg.type==='tick') {
+    state.remaining = msg.remaining;
+    state.isRunning = msg.isRunning;
+    renderPreview();
+  } else if (msg.type==='display-ready') {
+    saveState();
+  }
+});
+window.addEventListener('storage', (e)=>{
+  if (e.key===STORAGE_KEY && e.newValue) {
+    try {
+      const s=JSON.parse(e.newValue);
+      // if display updated storage via tick, sync preview
+      if (s.remaining!==undefined) {
+        state.remaining = s.remaining;
+        state.isRunning = s.isRunning;
+        state.scores = s.scores || state.scores;
+        state.names = s.names || state.names;
+        renderPreview();
+      }
+    } catch {}
+  }
+});
+
+// Keyboard shortcuts on controller
+document.addEventListener('keydown', (e)=>{
+  if (e.target.tagName==='INPUT') return;
+  if (e.code==='Space') { e.preventDefault(); state.isRunning? btnPause.click(): btnStart.click(); }
+  if (e.key.toLowerCase()==='r') btnReset.click();
+  if (e.key.toLowerCase()==='f') btnFullscreen.click();
+});
+
+// Init
+loadState();
+renderPreview();
+saveState();
+setInterval(()=>{
+  // update status if displayWin closed
+  if (displayWin && displayWin.closed) {
+    statusText.textContent = '表示画面が閉じられました';
+  }
+}, 2000);
+</script>
+</body>
+</html>
