@@ -25,7 +25,7 @@
     --red: #e30613;
     --blue: #0081ff;
     --digit: #fff;
-    --board-ratio: 1.2;
+    --board-ratio: 1.6;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
@@ -81,9 +81,9 @@
   #timerMin { text-align: right; }
   #timerSec { text-align: left; }
   .timer .colon { text-align: center; min-width: 0.4em; }
-  /* スコア */
+  /* スコア - 残り全体を埋めて下部余白を消す */
   .scores {
-    flex: 0.85;
+    flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0;
