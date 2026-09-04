@@ -72,15 +72,14 @@
     line-height: 1;
     color: var(--digit);
     letter-spacing: 0;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    display: flex;
+    justify-content: center;
     align-items: center;
-    width: 100%;
-    padding: 0 1vw;
+    width: auto;
   }
-  #timerMin { text-align: right; }
-  #timerSec { text-align: left; }
-  .timer .colon { text-align: center; min-width: 0.4em; }
+  #timerMin { text-align: center; }
+  #timerSec { text-align: center; }
+  .timer .colon { text-align: center; min-width: 0.3em; margin: 0 0.02em; }
   /* スコア - 残り全体を埋めて下部余白を消す */
   .scores {
     flex: 1;
