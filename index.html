@@ -147,8 +147,7 @@
     width: min(100vw, calc(100dvh * var(--board-ratio)));
     height: min(100dvh, calc(100vw / var(--board-ratio)));
   }
-
-  /* カウントダウンオーバーレイ - 中央に大きく表示、チーム名・赤青は隠す */
+  /* カウントダウンオーバーレイ */
   .countdown-overlay {
     position: absolute;
     inset: 0;
@@ -161,24 +160,18 @@
     pointer-events: none;
     transition: opacity 0.2s;
   }
-  .countdown-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
-  }
+  .countdown-overlay.active { opacity: 1; pointer-events: auto; }
   .countdown-text {
     font-family: 'DSEG14-Classic', 'DSEG7-Classic', monospace;
     font-weight: 400;
     font-size: min(28vh, 32vw, 320px);
-    line-height: 1;
     color: #fff;
-    letter-spacing: 0.06em;
     text-align: center;
   }
   .countdown-text.number {
     font-family: 'DSEG7-Classic', monospace;
     font-weight: 700;
     font-size: min(40vh, 36vw, 420px);
-    letter-spacing: 0;
   }
 
   #hint {
@@ -213,7 +206,6 @@ const $ = s=>document.getElementById(s);
 const timerMinEl=$('timerMin'), timerSecEl=$('timerSec'), scoreRedEl=$('scoreRed'), scoreBlueEl=$('scoreBlue'), nameRedEl=$('nameRed'), nameBlueEl=$('nameBlue'), boardWrap=$('boardWrap'), hintEl=$('hint'), countdownOverlay=$('countdownOverlay'), countdownText=$('countdownText');
 const STORAGE_KEY='scoreboard-state-v2', CHANNEL_NAME='scoreboard';
 let totalSeconds=3*60, remaining=0, isRunning=false, scores={red:0,blue:0}, names={red:"チームA",blue:"チームB"}, timerId=null;
-let initialSeconds=totalSeconds;
 let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
 let isCounting=false;
 let countdownIds=[];
@@ -221,14 +213,13 @@ function showCountdown(text, isNumber){
   countdownText.textContent=text;
   countdownText.className=isNumber?'countdown-text number':'countdown-text';
   countdownOverlay.classList.add('active');
-  // broadcast to controller
   const msg={type:'countdown', text, isNumber};
   if(bc) try{bc.postMessage(msg)}catch{}
   if(window.opener) try{window.opener.postMessage(msg,'*')}catch{}
 }
 function hideCountdown(){
   countdownOverlay.classList.remove('active');
-  const msg={type:'countdown', text:'', isNumber:false, hide:true};
+  const msg={type:'countdown', hide:true};
   if(bc) try{bc.postMessage(msg)}catch{}
   if(window.opener) try{window.opener.postMessage(msg,'*')}catch{}
 }
@@ -238,7 +229,7 @@ function clearCountdown(){
   hideCountdown();
   isCounting=false;
 }
-function startCountdownSequence(cb){
+function startCountdownSequence(){
   isCounting=true;
   showCountdown('READY', false);
   countdownIds.push(setTimeout(()=>{ showCountdown('3', true);
@@ -249,25 +240,21 @@ function startCountdownSequence(cb){
           countdownIds.push(setTimeout(()=>{
             hideCountdown();
             isCounting=false;
-            // STARTを0秒とし、表示されるタイミングで0:01になるように
             remaining=1;
             renderTimer();
             isRunning=true;
             if(!timerId) timerId=setInterval(tick,1000);
             save(); broadcastTick();
-            if(cb) cb();
           }, 1000));
         }, 1000));
       }, 1000));
     }, 1000));
   }, 2000));
 }
-
 function fmt(s){ const m=Math.floor(s/60), sec=s%60; return {m:String(m), s:String(sec).padStart(2,'0')} }
 function renderTimer(){
   const {m,s}=fmt(remaining);
   timerMinEl.textContent=m; timerSecEl.textContent=s;
-  // 2:57-2:59 黄色, 3:00 赤
   const el=document.getElementById('timerDisplay');
   el.classList.remove('warning','finished');
   if(remaining>=177 && remaining<=179) el.classList.add('warning');
@@ -275,7 +262,6 @@ function renderTimer(){
 }
 function renderScores(){
   scoreRedEl.textContent=scores.red; scoreBlueEl.textContent=scores.blue; nameRedEl.textContent=names.red||'RED'; nameBlueEl.textContent=names.blue||'BLUE';
-  // 4桁のみ自動縮小、3桁以下はCSSの固定サイズを維持
   [[scoreRedEl, scores.red],[scoreBlueEl, scores.blue]].forEach(([el,v])=>{
     const len=String(v).length;
     if(len>=4) el.style.fontSize='min(22vh,16vw,200px)';
@@ -292,23 +278,22 @@ function start(){
   if(isRunning||isCounting) return;
   if(remaining>=totalSeconds) return;
   if(remaining>0){
-    // 一時停止からの再開はカウントダウンなし
+    // 再開はカウントダウンなし
     isRunning=true;
     if(!timerId) timerId=setInterval(tick,1000);
     save(); broadcastTick();
     return;
   }
-  startCountdownSequence(()=>{});
+  startCountdownSequence();
 }
 function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; clearCountdown(); save(); broadcastTick(); }
-function reset(){ clearCountdown();  stop(); remaining=0; renderTimer(); save(); broadcastTick(); }
+function reset(){ clearCountdown(); stop(); remaining=0; renderTimer(); save(); broadcastTick(); }
 function setTime(m,s){ remaining=0; isRunning=false; if(timerId)clearInterval(timerId); timerId=null; renderTimer(); save(); broadcastTick(); }
 function applyState(s){
   if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds);
   if(s.isRunning!==undefined){
-    if(isCounting){
-      isRunning=s.isRunning;
-    } else {
+    if(isCounting){ isRunning=s.isRunning; }
+    else {
       if(s.isRunning&&!isRunning){isRunning=true; if(!timerId) timerId=setInterval(tick,1000);}
       else if(!s.isRunning&&isRunning){isRunning=false; if(timerId)clearInterval(timerId); timerId=null;}
       else isRunning=s.isRunning;

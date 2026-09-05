@@ -299,16 +299,6 @@ const statusText = document.getElementById('statusText');
 
 let displayWin = null;
 let bc = null;
-function showPreviewCountdown(text, isNumber){
-  if(!previewCountdown) return;
-  previewCountdownText.textContent=text;
-  previewCountdownText.className=isNumber?'countdown-text number':'countdown-text';
-  previewCountdown.classList.add('active');
-}
-function hidePreviewCountdown(){
-  if(!previewCountdown) return;
-  previewCountdown.classList.remove('active');
-}
 try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
 
 let state = {
@@ -324,7 +314,6 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      // merge
       state.initialSeconds = 180;
       if (s.remaining !== undefined) state.remaining = Math.min(s.remaining, 180);
       else state.remaining = 0;
@@ -336,10 +325,8 @@ function loadState() {
 }
 function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
-  // broadcast
   const msg = { type: 'state', state };
   if (bc) try { bc.postMessage(msg); } catch {}
-  // also for window.open direct postMessage
   if (displayWin && !displayWin.closed) {
     try { displayWin.postMessage(msg, '*'); } catch {}
   }
@@ -348,13 +335,22 @@ function broadcastCmd(action, payload={}) {
   const msg = { type: 'cmd', action, ...payload };
   if (bc) try { bc.postMessage(msg); } catch {}
   if (displayWin && !displayWin.closed) try { displayWin.postMessage(msg, '*'); } catch {}
-  // also persist if needed
 }
 
 function formatTimer(sec) {
   const m = Math.floor(sec/60);
   const s = sec%60;
   return { m: String(m), s: String(s).padStart(2,'0') };
+}
+function showPreviewCountdown(text, isNumber){
+  if(!previewCountdown) return;
+  previewCountdownText.textContent=text;
+  previewCountdownText.className=isNumber?'countdown-text number':'countdown-text';
+  previewCountdown.classList.add('active');
+}
+function hidePreviewCountdown(){
+  if(!previewCountdown) return;
+  previewCountdown.classList.remove('active');
 }
 function renderPreview() {
   const { m, s } = formatTimer(state.remaining);
@@ -368,8 +364,8 @@ function renderPreview() {
   inputNameBlue.value = state.names.blue;
   btnStart.disabled = state.isRunning;
   btnPause.disabled = !state.isRunning;
-  [ [pRed, state.scores.red], [pBlue, state.scores.blue] ].forEach(([el, v])=>{
-    const len = String(v).length;
+  [[pRed, state.scores.red],[pBlue, state.scores.blue]].forEach(([el,v])=>{
+    const len=String(v).length;
     if(len>=4) el.style.fontSize='44px';
     else if(len===3) el.style.fontSize='58px';
     else if(len===2) el.style.fontSize='78px';
@@ -387,25 +383,19 @@ function renderAndSave() {
   saveState();
 }
 
-// Controls - タイマー3:00固定
+// Controls
 btnStart.addEventListener('click', ()=>{
-  state.isRunning = true;
+  // 一時停止からの再開はカウントダウンなし、0からのみカウントダウン（表示側が担当）
   broadcastCmd('start');
-  renderAndSave();
+  // UIは表示側からのcountdown/tickで更新される
 });
 btnPause.addEventListener('click', ()=>{
-  state.isRunning = false;
   broadcastCmd('pause');
-  renderAndSave();
 });
 btnReset.addEventListener('click', ()=>{
-  state.remaining = 0;
-  state.isRunning = false;
   broadcastCmd('reset');
-  renderAndSave();
 });
 btnFullscreen.addEventListener('click', ()=>{
-  // send fullscreen command to display
   broadcastCmd('fullscreen');
 });
 
@@ -432,7 +422,6 @@ inputNameBlue.addEventListener('input', ()=>{ state.names.blue=inputNameBlue.val
 btnOpenDisplay.addEventListener('click', ()=>{
   displayWin = window.open('index.html', 'scoreboard-display');
   statusText.textContent = '表示画面を開きました。別モニタに移動してください。';
-  // send current state after open
   setTimeout(()=> saveState(), 500);
 });
 
@@ -451,10 +440,16 @@ if (bc) {
     } else if (msg.type==='countdown') {
       if(msg.hide) hidePreviewCountdown();
       else showPreviewCountdown(msg.text, msg.isNumber);
-    } else if (msg.type==='state') {
     } else if (msg.type==='display-ready') {
       saveState();
       statusText.textContent = '表示画面と接続しました';
+    } else if (msg.type==='state') {
+      // 同期
+      if(msg.state.scores) state.scores=msg.state.scores;
+      if(msg.state.names) state.names=msg.state.names;
+      if(msg.state.remaining!==undefined) state.remaining=msg.state.remaining;
+      if(msg.state.isRunning!==undefined) state.isRunning=msg.state.isRunning;
+      renderPreview();
     }
   };
 }
@@ -471,13 +466,18 @@ window.addEventListener('message', (e)=>{
     else showPreviewCountdown(msg.text, msg.isNumber);
   } else if (msg.type==='display-ready') {
     saveState();
+  } else if (msg.type==='state' && msg.state) {
+    if(msg.state.scores) state.scores=msg.state.scores;
+    if(msg.state.names) state.names=msg.state.names;
+    if(msg.state.remaining!==undefined) state.remaining=msg.state.remaining;
+    if(msg.state.isRunning!==undefined) state.isRunning=msg.state.isRunning;
+    renderPreview();
   }
 });
 window.addEventListener('storage', (e)=>{
   if (e.key===STORAGE_KEY && e.newValue) {
     try {
       const s=JSON.parse(e.newValue);
-      // if display updated storage via tick, sync preview
       if (s.remaining!==undefined) {
         state.remaining = s.remaining;
         state.isRunning = s.isRunning;
@@ -489,10 +489,10 @@ window.addEventListener('storage', (e)=>{
   }
 });
 
-// Keyboard shortcuts on controller
+// Keyboard shortcuts
 document.addEventListener('keydown', (e)=>{
   if (e.target.tagName==='INPUT') return;
-  if (e.code==='Space') { e.preventDefault(); state.isRunning? btnPause.click(): btnStart.click(); }
+  if (e.code==='Space') { e.preventDefault(); if(state.isRunning) btnPause.click(); else btnStart.click(); }
   if (e.key.toLowerCase()==='r') btnReset.click();
   if (e.key.toLowerCase()==='f') btnFullscreen.click();
 });
@@ -502,7 +502,6 @@ loadState();
 renderPreview();
 saveState();
 setInterval(()=>{
-  // update status if displayWin closed
   if (displayWin && displayWin.closed) {
     statusText.textContent = '表示画面が閉じられました';
   }
