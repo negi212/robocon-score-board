@@ -244,8 +244,13 @@ function startCountdownSequence(cb){
   countdownIds.push(setTimeout(()=>{ showCountdown('3', true);
     countdownIds.push(setTimeout(()=>{ showCountdown('2', true);
       countdownIds.push(setTimeout(()=>{ showCountdown('1', true);
-        countdownIds.push(setTimeout(()=>{ showCountdown('START', false);
-          countdownIds.push(setTimeout(()=>{ hideCountdown(); isCounting=false; cb(); }, 1000));
+        countdownIds.push(setTimeout(()=>{
+          showCountdown('START', false);
+          // STARTを0秒としてタイマー開始（表示はまだオーバーレイで隠れているため、1秒後に0:01で表示される）
+          isRunning=true;
+          if(!timerId) timerId=setInterval(tick,1000);
+          save(); broadcastTick();
+          countdownIds.push(setTimeout(()=>{ hideCountdown(); isCounting=false; if(cb) cb(); }, 1000));
         }, 1000));
       }, 1000));
     }, 1000));
@@ -280,15 +285,8 @@ function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;rende
 function start(){
   if(isRunning||isCounting) return;
   if(remaining>=totalSeconds) return;
-  // カウントダウン演出: READY 2秒 → 3,2,1,START 各1秒 → タイマー開始
-  startCountdownSequence(()=>{
-    // STARTのタイミングでタイマー開始（表示はカウントダウン終了後に切り替わる）
-    isRunning=true;
-    // 念のためremainingを0にリセット（カウントアップなので）
-    // remainingは既に0のまま
-    timerId=setInterval(tick,1000);
-    save(); broadcastTick();
-  });
+  // カウントダウン演出: READY 2秒 → 3,2,1,START 各1秒 → START表示と同時にタイマー開始
+  startCountdownSequence(()=>{});
 }
 function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; clearCountdown(); save(); broadcastTick(); }
 function reset(){ clearCountdown();  stop(); remaining=0; renderTimer(); save(); broadcastTick(); }
