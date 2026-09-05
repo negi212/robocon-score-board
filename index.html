@@ -287,7 +287,14 @@ function start(){
   startCountdownSequence();
 }
 function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; clearCountdown(); save(); broadcastTick(); }
-function reset(){ clearCountdown(); stop(); remaining=0; scores={red:0,blue:0}; renderAll(); save(); broadcastTick(); }
+function reset(){
+  clearCountdown();
+  stop();
+  remaining=0; scores={red:0,blue:0};
+  renderAll();
+  showCountdown('READY', false);
+  save(); broadcastTick();
+}
 function setTime(m,s){ remaining=0; isRunning=false; if(timerId)clearInterval(timerId); timerId=null; renderTimer(); save(); broadcastTick(); }
 function applyState(s){
   if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds);
@@ -308,7 +315,9 @@ document.addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='f'){ if(!docu
 boardWrap.addEventListener('dblclick',()=>{ if(!document.fullscreenElement)boardWrap.requestFullscreen?.(); else document.exitFullscreen?.(); });
 function showHint(){ hintEl.style.opacity='1'; setTimeout(()=>hintEl.style.opacity='0',2500); }
 setTimeout(showHint,600);
-load(); renderAll(); if(isRunning) timerId=setInterval(tick,1000);
+load(); renderAll();
+if(!isRunning && remaining===0) showCountdown('READY', false);
+if(isRunning) timerId=setInterval(tick,1000);
 setTimeout(()=>{ const m={type:'display-ready'}; if(bc)try{bc.postMessage(m)}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} },300);
 </script>
 </body>

@@ -406,6 +406,7 @@ btnReset.addEventListener('click', ()=>{
   state.scores.red=0; state.scores.blue=0;
   state.remaining=0; state.isRunning=false;
   renderAndSave();
+  showPreviewCountdown('READY', false);
   broadcastCmd('reset');
 });
 btnFullscreen.addEventListener('click', ()=>{
@@ -445,7 +446,8 @@ if (bc) {
       state.remaining = msg.remaining;
       state.isRunning = msg.isRunning;
       renderPreview();
-      hidePreviewCountdown();
+      if(state.remaining===0 && !state.isRunning) showPreviewCountdown('READY', false);
+      else hidePreviewCountdown();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
       statusText.textContent = `表示画面と同期中... ${formatTimer(state.remaining).m}:${formatTimer(state.remaining).s} ${state.isRunning?'●進行中':'○停止中'}`;
     } else if (msg.type==='countdown') {
@@ -468,10 +470,11 @@ window.addEventListener('message', (e)=>{
   const msg=e.data;
   if (!msg || !msg.type) return;
   if (msg.type==='tick') {
-    state.remaining = msg.remaining;
-    state.isRunning = msg.isRunning;
-    renderPreview();
-    hidePreviewCountdown();
+      state.remaining = msg.remaining;
+      state.isRunning = msg.isRunning;
+      renderPreview();
+      if(state.remaining===0 && !state.isRunning) showPreviewCountdown('READY', false);
+      else hidePreviewCountdown();
   } else if (msg.type==='countdown') {
     if(msg.hide) hidePreviewCountdown();
     else showPreviewCountdown(msg.text, msg.isNumber);
@@ -511,6 +514,7 @@ document.addEventListener('keydown', (e)=>{
 // Init
 loadState();
 renderPreview();
+if(!state.isRunning && state.remaining===0) showPreviewCountdown('READY', false);
 saveState();
 setInterval(()=>{
   if (displayWin && displayWin.closed) {
