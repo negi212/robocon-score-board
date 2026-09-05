@@ -237,9 +237,9 @@ function clearCountdown(){
 function startCountdownSequence(){
   isCounting=true;
   showCountdown('5', true);
-  playCountdownSound();
   countdownIds.push(setTimeout(()=>{ showCountdown('4', true);
     countdownIds.push(setTimeout(()=>{ showCountdown('3', true);
+      playCountdownSound();
       countdownIds.push(setTimeout(()=>{ showCountdown('2', true);
         countdownIds.push(setTimeout(()=>{ showCountdown('1', true);
           countdownIds.push(setTimeout(()=>{
