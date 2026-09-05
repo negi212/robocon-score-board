@@ -201,6 +201,7 @@
   </div>
     <div id="countdownOverlay" class="countdown-overlay"><div id="countdownText" class="countdown-text"></div></div>
   <audio id="countdownSound" src="sounds/countdown.mp3" preload="auto"></audio>
+  <audio id="buzzerSound" src="sounds/buzzer.mp3" preload="auto"></audio>
   <div id="hint">control.htmlで操作 | F:全画面</div>
 <script>
 const $ = s=>document.getElementById(s);
@@ -278,20 +279,25 @@ function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialS
 function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.names)names=s.names; if(s.scores)scores=s.scores; if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; else if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined)isRunning=s.isRunning; } else if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; }catch{} if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; }
 function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
 let countdownAudio=document.getElementById('countdownSound');
+let buzzerAudio=document.getElementById('buzzerSound');
 let countdownBuffer=null;
+let buzzerBuffer=null;
 let audioCtx2=null;
 try{
   const AC = window.AudioContext||window.webkitAudioContext;
   if(AC) audioCtx2=new AC();
   fetch('sounds/countdown.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{countdownBuffer=buf;}).catch(()=>{})).catch(()=>{});
+  fetch('sounds/buzzer.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{buzzerBuffer=buf;}).catch(()=>{})).catch(()=>{});
 }catch{}
 function unlockAudio(){
   try{
     if(audioCtx2 && audioCtx2.state==='suspended') audioCtx2.resume();
-    if(countdownAudio) {
-      countdownAudio.muted=true;
-      const p=countdownAudio.play();
-      if(p) p.then(()=>{ countdownAudio.pause(); countdownAudio.currentTime=0; countdownAudio.muted=false; }).catch(()=>{ countdownAudio.muted=false; });
+    for(const a of [countdownAudio, buzzerAudio]){
+      if(a) {
+        a.muted=true;
+        const p=a.play();
+        if(p) p.then(()=>{ a.pause(); a.currentTime=0; a.muted=false; }).catch(()=>{ a.muted=false; });
+      }
     }
   }catch{}
 }
@@ -299,8 +305,7 @@ document.addEventListener('click', unlockAudio, {once:true});
 document.addEventListener('keydown', unlockAudio, {once:true});
 async function playCountdownSound(){
   try{
-    // Web Audioを優先（長時間経過後もresumeして再生）
-    let ctx = audioCtx2 || audioCtx;
+    let ctx = audioCtx2;
     if(!ctx){
       try{ const AC=window.AudioContext||window.webkitAudioContext; if(AC) ctx=audioCtx2=new AC(); }catch{}
     }
@@ -311,36 +316,44 @@ async function playCountdownSound(){
         src.buffer=countdownBuffer;
         src.connect(ctx.destination);
         src.start();
-        console.log('countdown played via WebAudio at', remaining, 'sec');
         return;
       }
     }
     let a = countdownAudio || document.getElementById('countdownSound');
-    if(!a) a=document.getElementById('countdownSound');
     if(a){
       a.muted=false;
       a.currentTime=0;
       const p=a.play();
-      if(p) await p.catch(async ()=>{
-        // フォールバックでWebAudioビープ
-        if(ctx){
-          if(ctx.state==='suspended') await ctx.resume().catch(()=>{});
-          const o=ctx.createOscillator(), g=ctx.createGain();
-          o.type='square'; o.frequency.value=880;
-          o.connect(g); g.connect(ctx.destination);
-          g.gain.setValueAtTime(0.3, ctx.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+0.3);
-          o.start(); o.stop(ctx.currentTime+0.3);
-        }
-      });
-      else {
-        console.log('countdown played via HTMLAudio');
-      }
+      if(p) await p.catch(()=>{});
     }
   }catch(e){ console.log('playCountdownSound error', e); }
 }
-let audioCtx; function beep(){ try{ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='square';o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3);o.start();o.stop(audioCtx.currentTime+0.3);}catch{} }
-function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); broadcastTick(); if(remaining>=totalSeconds){stop();save();} }
+async function playBuzzerSound(){
+  try{
+    let ctx = audioCtx2;
+    if(!ctx){
+      try{ const AC=window.AudioContext||window.webkitAudioContext; if(AC) ctx=audioCtx2=new AC(); }catch{}
+    }
+    if(ctx){
+      if(ctx.state==='suspended') await ctx.resume().catch(()=>{});
+      if(buzzerBuffer){
+        const src=ctx.createBufferSource();
+        src.buffer=buzzerBuffer;
+        src.connect(ctx.destination);
+        src.start();
+        return;
+      }
+    }
+    let a = buzzerAudio || document.getElementById('buzzerSound');
+    if(a){
+      a.muted=false;
+      a.currentTime=0;
+      const p=a.play();
+      if(p) await p.catch(()=>{});
+    }
+  }catch(e){ console.log('playBuzzerSound error', e); }
+}
+function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); if([30,60,120,150].includes(remaining)) playBuzzerSound(); broadcastTick(); if(remaining>=totalSeconds){stop();save();} }
 function start(){
   if(isRunning||isCounting) return;
   if(remaining>=totalSeconds) return;
