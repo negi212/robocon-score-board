@@ -340,7 +340,7 @@ async function playCountdownSound(){
   }catch(e){ console.log('playCountdownSound error', e); }
 }
 let audioCtx; function beep(){ try{ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='square';o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3);o.start();o.stop(audioCtx.currentTime+0.3);}catch{} }
-function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();beep();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); broadcastTick(); if(remaining>=totalSeconds){stop();beep();setTimeout(beep,400);setTimeout(beep,800);save();} }
+function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); broadcastTick(); if(remaining>=totalSeconds){stop();save();} }
 function start(){
   if(isRunning||isCounting) return;
   if(remaining>=totalSeconds) return;
