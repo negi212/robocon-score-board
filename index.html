@@ -243,7 +243,7 @@ function startCountdownSequence(){
             remaining=1;
             renderTimer();
             isRunning=true;
-            if(!timerId) timerId=setInterval(tick,500);
+            if(!timerId) timerId=setInterval(tick,1000);
             save(); broadcastTick();
           }, 1000));
         }, 1000));
@@ -280,7 +280,7 @@ function start(){
   if(remaining>0){
     // 再開はカウントダウンなし
     isRunning=true;
-    if(!timerId) timerId=setInterval(tick,500);
+    if(!timerId) timerId=setInterval(tick,1000);
     save(); broadcastTick();
     return;
   }
@@ -294,7 +294,7 @@ function applyState(s){
   if(s.isRunning!==undefined){
     if(isCounting){ isRunning=s.isRunning; }
     else {
-      if(s.isRunning&&!isRunning){isRunning=true; if(!timerId) timerId=setInterval(tick,500);}
+      if(s.isRunning&&!isRunning){isRunning=true; if(!timerId) timerId=setInterval(tick,1000);}
       else if(!s.isRunning&&isRunning){isRunning=false; if(timerId)clearInterval(timerId); timerId=null;}
       else isRunning=s.isRunning;
     }
@@ -308,7 +308,7 @@ document.addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='f'){ if(!docu
 boardWrap.addEventListener('dblclick',()=>{ if(!document.fullscreenElement)boardWrap.requestFullscreen?.(); else document.exitFullscreen?.(); });
 function showHint(){ hintEl.style.opacity='1'; setTimeout(()=>hintEl.style.opacity='0',2500); }
 setTimeout(showHint,600);
-load(); renderAll(); if(isRunning) timerId=setInterval(tick,500);
+load(); renderAll(); if(isRunning) timerId=setInterval(tick,1000);
 setTimeout(()=>{ const m={type:'display-ready'}; if(bc)try{bc.postMessage(m)}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} },300);
 </script>
 </body>
