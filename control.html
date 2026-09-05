@@ -195,20 +195,7 @@
   </div>
 
   <div class="controls">
-    <h2>コントロール</h2>
-    <div class="timer-setup">
-      <span>タイマー設定</span>
-      <input type="number" id="inputMin" min="0" max="99" value="3"> 分
-      <input type="number" id="inputSec" min="0" max="59" value="00"> 秒
-      <button class="btn btn-dark" id="btnSetTime" style="padding:6px 12px; font-size:13px;">セット</button>
-    </div>
-    <div class="preset-row">
-      <button class="preset-btn" data-preset="03:00">3:00</button>
-      <button class="preset-btn" data-preset="04:00">4:00</button>
-      <button class="preset-btn" data-preset="05:00">5:00</button>
-      <button class="preset-btn" data-preset="04:36">4:36 画像再現</button>
-      <button class="preset-btn" data-preset="10:00">10:00</button>
-    </div>
+    <h2>コントロール - 3:00固定</h2>
     <div class="control-row">
       <button class="btn btn-primary" id="btnStart">▶ スタート</button>
       <button class="btn btn-dark" id="btnPause" disabled>⏸ 一時停止</button>
@@ -261,14 +248,11 @@ const pBlue = document.getElementById('pScoreBlue');
 const pNameRed = document.getElementById('pNameRed');
 const pNameBlue = document.getElementById('pNameBlue');
 // Controls
-const inputMin = document.getElementById('inputMin');
-const inputSec = document.getElementById('inputSec');
 const inputNameRed = document.getElementById('inputNameRed');
 const inputNameBlue = document.getElementById('inputNameBlue');
 const btnStart = document.getElementById('btnStart');
 const btnPause = document.getElementById('btnPause');
 const btnReset = document.getElementById('btnReset');
-const btnSetTime = document.getElementById('btnSetTime');
 const btnFullscreen = document.getElementById('btnFullscreen');
 const btnOpenDisplay = document.getElementById('btnOpenDisplay');
 const statusText = document.getElementById('statusText');
@@ -291,8 +275,11 @@ function loadState() {
     if (raw) {
       const s = JSON.parse(raw);
       // merge
-      state.initialSeconds = s.initialSeconds ?? state.initialSeconds;
-      state.remaining = s.remaining ?? state.remaining;
+      // タイマー3:00固定のため initialSeconds は常に 180 に矯正
+      state.initialSeconds = 180;
+      // remaining は保存値を尊重するが、初期は180
+      if (s.remaining !== undefined && s.initialSeconds === 180) state.remaining = s.remaining;
+      else state.remaining = 180;
       state.isRunning = s.isRunning ?? false;
       state.scores = s.scores ?? state.scores;
       state.names = s.names ?? state.names;
@@ -329,14 +316,8 @@ function renderPreview() {
   pBlue.textContent = state.scores.blue;
   pNameRed.textContent = state.names.red || 'RED';
   pNameBlue.textContent = state.names.blue || 'BLUE';
-  // inputs
   inputNameRed.value = state.names.red;
   inputNameBlue.value = state.names.blue;
-  const m0 = Math.floor(state.initialSeconds/60);
-  const s0 = state.initialSeconds%60;
-  // only update time inputs if not focused
-  if (document.activeElement !== inputMin) inputMin.value = m0;
-  if (document.activeElement !== inputSec) inputSec.value = s0;
   btnStart.disabled = state.isRunning;
   btnPause.disabled = !state.isRunning;
 }
@@ -345,23 +326,7 @@ function renderAndSave() {
   saveState();
 }
 
-// Controls
-btnSetTime.addEventListener('click', () => {
-  const m = Math.max(0, Math.min(99, parseInt(inputMin.value)||0));
-  const s = Math.max(0, Math.min(59, parseInt(inputSec.value)||0));
-  state.initialSeconds = m*60+s;
-  state.remaining = state.initialSeconds;
-  state.isRunning = false;
-  broadcastCmd('setTime', { initialSeconds: state.initialSeconds, remaining: state.remaining });
-  renderAndSave();
-});
-document.querySelectorAll('.preset-btn').forEach(b=>{
-  b.addEventListener('click', ()=>{
-    const [m,s]=b.dataset.preset.split(':').map(Number);
-    inputMin.value=m; inputSec.value=s;
-    btnSetTime.click();
-  });
-});
+// Controls - タイマー3:00固定
 btnStart.addEventListener('click', ()=>{
   state.isRunning = true;
   broadcastCmd('start');
