@@ -80,6 +80,8 @@
   #timerMin { text-align: center; }
   #timerSec { text-align: center; }
   .timer .colon { text-align: center; min-width: 0.3em; margin: 0 0.02em; }
+  .timer.warning { color: #ffe600; }
+  .timer.finished { color: #ff3b3b; }
   /* スコア - 残り全体を埋めて下部余白を消す */
   .scores {
     flex: 1;
@@ -147,7 +149,7 @@
   <div class="board-wrap" id="boardWrap">
     <div class="scoreboard">
       <div class="timer-area">
-        <div class="timer" id="timerDisplay"><span id="timerMin">3</span><span class="colon">:</span><span id="timerSec">00</span></div>
+        <div class="timer" id="timerDisplay"><span id="timerMin">0</span><span class="colon">:</span><span id="timerSec">00</span></div>
       </div>
       <div class="scores">
         <div class="team red">
@@ -166,10 +168,19 @@
 const $ = s=>document.getElementById(s);
 const timerMinEl=$('timerMin'), timerSecEl=$('timerSec'), scoreRedEl=$('scoreRed'), scoreBlueEl=$('scoreBlue'), nameRedEl=$('nameRed'), nameBlueEl=$('nameBlue'), boardWrap=$('boardWrap'), hintEl=$('hint');
 const STORAGE_KEY='scoreboard-state-v2', CHANNEL_NAME='scoreboard';
-let initialSeconds=3*60, remaining=3*60, isRunning=false, scores={red:0,blue:0}, names={red:"チームA",blue:"チームB"}, timerId=null;
+let totalSeconds=3*60, remaining=0, isRunning=false, scores={red:0,blue:0}, names={red:"チームA",blue:"チームB"}, timerId=null;
+let initialSeconds=totalSeconds;
 let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
 function fmt(s){ const m=Math.floor(s/60), sec=s%60; return {m:String(m), s:String(sec).padStart(2,'0')} }
-function renderTimer(){ const {m,s}=fmt(remaining); timerMinEl.textContent=m; timerSecEl.textContent=s; }
+function renderTimer(){
+  const {m,s}=fmt(remaining);
+  timerMinEl.textContent=m; timerSecEl.textContent=s;
+  // 2:57-2:59 黄色, 3:00 赤
+  const el=document.getElementById('timerDisplay');
+  el.classList.remove('warning','finished');
+  if(remaining>=177 && remaining<=179) el.classList.add('warning');
+  else if(remaining>=180) el.classList.add('finished');
+}
 function renderScores(){
   scoreRedEl.textContent=scores.red; scoreBlueEl.textContent=scores.blue; nameRedEl.textContent=names.red||'RED'; nameBlueEl.textContent=names.blue||'BLUE';
   // 4桁のみ自動縮小、3桁以下はCSSの固定サイズを維持
@@ -180,17 +191,16 @@ function renderScores(){
   });
 }
 function renderAll(){ renderTimer(); renderScores(); }
-function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds,remaining,isRunning,scores,names})); }catch{} }
-function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); // タイマー3:00固定
-if(s.names)names=s.names; if(s.scores)scores=s.scores; if(s.remaining!==undefined && s.initialSeconds===180) remaining=s.remaining; else remaining=180; initialSeconds=180; if(s.isRunning!==undefined)isRunning=s.isRunning; } }catch{} }
-function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
+function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names})); }catch{} }
+function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.names)names=s.names; if(s.scores)scores=s.scores; if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined)isRunning=s.isRunning; } }catch{} }
+function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
 let audioCtx; function beep(){ try{ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='square';o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3);o.start();o.stop(audioCtx.currentTime+0.3);}catch{} }
-function tick(){ if(remaining<=0){stop();remaining=0;renderTimer();beep();broadcastTick();return} remaining--; renderTimer(); broadcastTick(); if(remaining<=0){stop();beep();setTimeout(beep,400);setTimeout(beep,800);save();} }
-function start(){ if(isRunning||remaining<=0)return; isRunning=true; timerId=setInterval(tick,1000); save(); broadcastTick(); }
+function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();beep();broadcastTick();return} remaining++; renderTimer(); broadcastTick(); if(remaining>=totalSeconds){stop();beep();setTimeout(beep,400);setTimeout(beep,800);save();} }
+function start(){ if(isRunning||remaining>=totalSeconds)return; isRunning=true; timerId=setInterval(tick,1000); save(); broadcastTick(); }
 function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; save(); broadcastTick(); }
-function reset(){ stop(); remaining=initialSeconds; renderTimer(); save(); broadcastTick(); }
-function setTime(m,s){ const mm=Math.max(0,Math.min(99,m)), ss=Math.max(0,Math.min(59,s)); initialSeconds=mm*60+ss; remaining=initialSeconds; isRunning=false; if(timerId)clearInterval(timerId); timerId=null; renderTimer(); save(); broadcastTick(); }
-function applyState(s){ if(s.initialSeconds!==undefined)initialSeconds=s.initialSeconds; if(s.remaining!==undefined)remaining=s.remaining; if(s.isRunning!==undefined){ if(s.isRunning&&!isRunning){isRunning=true; if(!timerId)timerId=setInterval(tick,1000);} else if(!s.isRunning&&isRunning){isRunning=false; if(timerId)clearInterval(timerId); timerId=null;} else isRunning=s.isRunning; } if(s.scores)scores=s.scores; if(s.names)names=s.names; renderAll(); }
+function reset(){ stop(); remaining=0; renderTimer(); save(); broadcastTick(); }
+function setTime(m,s){ remaining=0; isRunning=false; if(timerId)clearInterval(timerId); timerId=null; renderTimer(); save(); broadcastTick(); }
+function applyState(s){ if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined){ if(s.isRunning&&!isRunning){isRunning=true; if(!timerId)timerId=setInterval(tick,1000);} else if(!s.isRunning&&isRunning){isRunning=false; if(timerId)clearInterval(timerId); timerId=null;} else isRunning=s.isRunning; } if(s.scores)scores=s.scores; if(s.names)names=s.names; renderAll(); }
 if(bc) bc.onmessage=e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } };
 window.addEventListener('message',e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } });
 window.addEventListener('storage',e=>{ if(e.key===STORAGE_KEY&&e.newValue){ try{applyState(JSON.parse(e.newValue))}catch{} } });
