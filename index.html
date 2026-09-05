@@ -240,12 +240,12 @@ function startCountdownSequence(){
           countdownIds.push(setTimeout(()=>{
             hideCountdown();
             isCounting=false;
-            remaining=1;
+            remaining=2;
             renderTimer();
             isRunning=true;
             if(!timerId) timerId=setInterval(tick,1000);
             save(); broadcastTick();
-          }, 1000));
+          }, 2000));
         }, 1000));
       }, 1000));
     }, 1000));
