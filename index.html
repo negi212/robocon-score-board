@@ -147,16 +147,16 @@
   <div class="board-wrap" id="boardWrap">
     <div class="scoreboard">
       <div class="timer-area">
-        <div class="timer" id="timerDisplay"><span id="timerMin">4</span><span class="colon">:</span><span id="timerSec">36</span></div>
+        <div class="timer" id="timerDisplay"><span id="timerMin">3</span><span class="colon">:</span><span id="timerSec">00</span></div>
       </div>
       <div class="scores">
         <div class="team red">
-          <div class="team-inner-black"><div class="score" id="scoreRed">215</div></div>
-          <div class="team-name" id="nameRed">福島 A</div>
+          <div class="team-inner-black"><div class="score" id="scoreRed">0</div></div>
+          <div class="team-name" id="nameRed">チームA</div>
         </div>
         <div class="team blue">
-          <div class="team-inner-black"><div class="score" id="scoreBlue">165</div></div>
-          <div class="team-name" id="nameBlue">秋田 B</div>
+          <div class="team-inner-black"><div class="score" id="scoreBlue">0</div></div>
+          <div class="team-name" id="nameBlue">チームB</div>
         </div>
       </div>
     </div>
@@ -165,8 +165,8 @@
 <script>
 const $ = s=>document.getElementById(s);
 const timerMinEl=$('timerMin'), timerSecEl=$('timerSec'), scoreRedEl=$('scoreRed'), scoreBlueEl=$('scoreBlue'), nameRedEl=$('nameRed'), nameBlueEl=$('nameBlue'), boardWrap=$('boardWrap'), hintEl=$('hint');
-const STORAGE_KEY='scoreboard-state', CHANNEL_NAME='scoreboard';
-let initialSeconds=4*60+36, remaining=4*60+36, isRunning=false, scores={red:215,blue:165}, names={red:"福島 A",blue:"秋田 B"}, timerId=null;
+const STORAGE_KEY='scoreboard-state-v2', CHANNEL_NAME='scoreboard';
+let initialSeconds=3*60, remaining=3*60, isRunning=false, scores={red:0,blue:0}, names={red:"チームA",blue:"チームB"}, timerId=null;
 let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
 function fmt(s){ const m=Math.floor(s/60), sec=s%60; return {m:String(m), s:String(sec).padStart(2,'0')} }
 function renderTimer(){ const {m,s}=fmt(remaining); timerMinEl.textContent=m; timerSecEl.textContent=s; }

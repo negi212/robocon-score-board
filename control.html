@@ -180,16 +180,16 @@
   <!-- プレビュー -->
   <div class="preview" id="preview">
     <div class="timer-area">
-      <div class="timer"><span id="pTimerMin">4</span><span class="colon">:</span><span id="pTimerSec">36</span></div>
+      <div class="timer"><span id="pTimerMin">3</span><span class="colon">:</span><span id="pTimerSec">00</span></div>
     </div>
     <div class="scores">
       <div class="team red">
-        <div class="team-inner-black"><div class="score" id="pScoreRed">215</div></div>
-        <div class="team-name" id="pNameRed">福島 A</div>
+        <div class="team-inner-black"><div class="score" id="pScoreRed">0</div></div>
+        <div class="team-name" id="pNameRed">チームA</div>
       </div>
       <div class="team blue">
-        <div class="team-inner-black"><div class="score" id="pScoreBlue">165</div></div>
-        <div class="team-name" id="pNameBlue">秋田 B</div>
+        <div class="team-inner-black"><div class="score" id="pScoreBlue">0</div></div>
+        <div class="team-name" id="pNameBlue">チームB</div>
       </div>
     </div>
   </div>
@@ -198,8 +198,8 @@
     <h2>コントロール</h2>
     <div class="timer-setup">
       <span>タイマー設定</span>
-      <input type="number" id="inputMin" min="0" max="99" value="4"> 分
-      <input type="number" id="inputSec" min="0" max="59" value="36"> 秒
+      <input type="number" id="inputMin" min="0" max="99" value="3"> 分
+      <input type="number" id="inputSec" min="0" max="59" value="00"> 秒
       <button class="btn btn-dark" id="btnSetTime" style="padding:6px 12px; font-size:13px;">セット</button>
     </div>
     <div class="preset-row">
@@ -217,25 +217,25 @@
     </div>
     <div class="score-controls">
       <div class="team-control red">
-        <div class="team-control-label"><span class="dot red"></span> RED / 福島</div>
+        <div class="team-control-label"><span class="dot red"></span> RED / チームA</div>
         <div class="score-btns">
           <button class="btn btn-dark" data-team="red" data-delta="-10">-10</button>
           <button class="btn btn-dark" data-team="red" data-delta="-1">-1</button>
           <button class="btn btn-red" data-team="red" data-delta="1">+1</button>
           <button class="btn btn-red" data-team="red" data-delta="10">+10</button>
         </div>
-        <input class="team-input" id="inputNameRed" value="福島 A" maxlength="12" placeholder="チーム名">
+        <input class="team-input" id="inputNameRed" value="チームA" maxlength="12" placeholder="チーム名">
         <div class="score-btns" style="margin-top:6px;"><button class="btn btn-dark" style="font-size:12px; padding:6px;" id="btnResetRed">0にリセット</button></div>
       </div>
       <div class="team-control blue">
-        <div class="team-control-label"><span class="dot blue"></span> BLUE / 秋田</div>
+        <div class="team-control-label"><span class="dot blue"></span> BLUE / チームB</div>
         <div class="score-btns">
           <button class="btn btn-dark" data-team="blue" data-delta="-10">-10</button>
           <button class="btn btn-dark" data-team="blue" data-delta="-1">-1</button>
           <button class="btn btn-blue" data-team="blue" data-delta="1">+1</button>
           <button class="btn btn-blue" data-team="blue" data-delta="10">+10</button>
         </div>
-        <input class="team-input" id="inputNameBlue" value="秋田 B" maxlength="12" placeholder="チーム名">
+        <input class="team-input" id="inputNameBlue" value="チームB" maxlength="12" placeholder="チーム名">
         <div class="score-btns" style="margin-top:6px;"><button class="btn btn-dark" style="font-size:12px; padding:6px;" id="btnResetBlue">0にリセット</button></div>
       </div>
     </div>
@@ -250,7 +250,7 @@
   </div>
 
 <script>
-const STORAGE_KEY = 'scoreboard-state';
+const STORAGE_KEY = 'scoreboard-state-v2';
 const CHANNEL_NAME = 'scoreboard';
 
 // Elements - preview
@@ -278,11 +278,11 @@ let bc = null;
 try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
 
 let state = {
-  initialSeconds: 4*60+36,
-  remaining: 4*60+36,
+  initialSeconds: 3*60,
+  remaining: 3*60,
   isRunning: false,
-  scores: { red: 215, blue: 165 },
-  names: { red: "福島 A", blue: "秋田 B" }
+  scores: { red: 0, blue: 0 },
+  names: { red: "チームA", blue: "チームB" }
 };
 
 function loadState() {
