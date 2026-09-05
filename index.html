@@ -170,7 +170,16 @@ let initialSeconds=3*60, remaining=3*60, isRunning=false, scores={red:0,blue:0},
 let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
 function fmt(s){ const m=Math.floor(s/60), sec=s%60; return {m:String(m), s:String(sec).padStart(2,'0')} }
 function renderTimer(){ const {m,s}=fmt(remaining); timerMinEl.textContent=m; timerSecEl.textContent=s; }
-function renderScores(){ scoreRedEl.textContent=scores.red; scoreBlueEl.textContent=scores.blue; nameRedEl.textContent=names.red||'RED'; nameBlueEl.textContent=names.blue||'BLUE'; }
+function renderScores(){
+  scoreRedEl.textContent=scores.red; scoreBlueEl.textContent=scores.blue; nameRedEl.textContent=names.red||'RED'; nameBlueEl.textContent=names.blue||'BLUE';
+  // 桁数で自動縮小（はみ出し防止）
+  [[scoreRedEl, scores.red],[scoreBlueEl, scores.blue]].forEach(([el,v])=>{
+    const len=String(v).length;
+    if(len>=3) el.style.fontSize='min(22vh,18vw,200px)';
+    else if(len===2) el.style.fontSize='min(28vh,24vw,260px)';
+    else el.style.fontSize='min(36vh,35vw,342px)';
+  });
+}
 function renderAll(){ renderTimer(); renderScores(); }
 function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds,remaining,isRunning,scores,names})); }catch{} }
 function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); // タイマー3:00固定

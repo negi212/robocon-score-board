@@ -320,6 +320,13 @@ function renderPreview() {
   inputNameBlue.value = state.names.blue;
   btnStart.disabled = state.isRunning;
   btnPause.disabled = !state.isRunning;
+  // 桁数に応じて自動縮小（はみ出し防止）
+  [ [pRed, state.scores.red], [pBlue, state.scores.blue] ].forEach(([el, v])=>{
+    const len = String(v).length;
+    if(len>=3) el.style.fontSize='58px';
+    else if(len===2) el.style.fontSize='78px';
+    else el.style.fontSize='110px';
+  });
 }
 function renderAndSave() {
   renderPreview();
