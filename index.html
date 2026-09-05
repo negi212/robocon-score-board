@@ -293,7 +293,19 @@ function start(){
 function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; clearCountdown(); save(); broadcastTick(); }
 function reset(){ clearCountdown();  stop(); remaining=0; renderTimer(); save(); broadcastTick(); }
 function setTime(m,s){ remaining=0; isRunning=false; if(timerId)clearInterval(timerId); timerId=null; renderTimer(); save(); broadcastTick(); }
-function applyState(s){ if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined){ if(s.isRunning&&!isRunning){isRunning=true; if(!timerId)timerId=setInterval(tick,1000);} else if(!s.isRunning&&isRunning){isRunning=false; if(timerId)clearInterval(timerId); timerId=null;} else isRunning=s.isRunning; } if(s.scores)scores=s.scores; if(s.names)names=s.names; renderAll(); }
+function applyState(s){
+  if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds);
+  if(s.isRunning!==undefined){
+    if(isCounting){
+      isRunning=s.isRunning;
+    } else {
+      if(s.isRunning&&!isRunning){isRunning=true; if(!timerId) timerId=setInterval(tick,1000);}
+      else if(!s.isRunning&&isRunning){isRunning=false; if(timerId)clearInterval(timerId); timerId=null;}
+      else isRunning=s.isRunning;
+    }
+  }
+  if(s.scores)scores=s.scores; if(s.names)names=s.names; renderAll();
+}
 if(bc) bc.onmessage=e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } };
 window.addEventListener('message',e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } });
 window.addEventListener('storage',e=>{ if(e.key===STORAGE_KEY&&e.newValue){ try{applyState(JSON.parse(e.newValue))}catch{} } });
