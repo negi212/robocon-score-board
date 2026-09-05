@@ -207,7 +207,7 @@ const $ = s=>document.getElementById(s);
 const timerMinEl=$('timerMin'), timerSecEl=$('timerSec'), scoreRedEl=$('scoreRed'), scoreBlueEl=$('scoreBlue'), nameRedEl=$('nameRed'), nameBlueEl=$('nameBlue'), boardWrap=$('boardWrap'), hintEl=$('hint'), countdownOverlay=$('countdownOverlay'), countdownText=$('countdownText');
 const STORAGE_KEY='scoreboard-state-v2', CHANNEL_NAME='scoreboard';
 // テスト用: 何秒から始めるか (0=0:00, 60=1:00, 177=2:57, 0で通常)
-const TEST_START_SECONDS = 0;
+const TEST_START_SECONDS = 170;
 let totalSeconds=3*60, remaining=TEST_START_SECONDS, isRunning=false, scores={red:0,blue:0}, names={red:"チームA",blue:"チームB"}, timerId=null;
 let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
 let isCounting=false;
@@ -340,7 +340,7 @@ async function playCountdownSound(){
   }catch(e){ console.log('playCountdownSound error', e); }
 }
 let audioCtx; function beep(){ try{ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='square';o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3);o.start();o.stop(audioCtx.currentTime+0.3);}catch{} }
-function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();beep();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); broadcastTick(); if(remaining>=totalSeconds){stop();beep();setTimeout(beep,400);setTimeout(beep,800);save();} }
+function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); broadcastTick(); if(remaining>=totalSeconds){stop();save();} }
 function start(){
   if(isRunning||isCounting) return;
   if(remaining>=totalSeconds) return;
