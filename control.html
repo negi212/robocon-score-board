@@ -319,10 +319,11 @@ function renderPreview() {
   inputNameBlue.value = state.names.blue;
   btnStart.disabled = state.isRunning;
   btnPause.disabled = !state.isRunning;
-  // 桁数に応じて自動縮小（はみ出し防止）
+  // 桁数に応じて自動縮小（4桁対応、はみ出し防止）
   [ [pRed, state.scores.red], [pBlue, state.scores.blue] ].forEach(([el, v])=>{
     const len = String(v).length;
-    if(len>=3) el.style.fontSize='58px';
+    if(len>=4) el.style.fontSize='44px';
+    else if(len===3) el.style.fontSize='58px';
     else if(len===2) el.style.fontSize='78px';
     else el.style.fontSize='110px';
   });
@@ -359,7 +360,7 @@ document.querySelectorAll('[data-team][data-delta]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const team=btn.dataset.team;
     const d=parseInt(btn.dataset.delta,10);
-    state.scores[team]=Math.max(0, Math.min(999, state.scores[team]+d));
+    state.scores[team]=Math.max(0, Math.min(9999, state.scores[team]+d));
     renderAndSave();
   });
 });
