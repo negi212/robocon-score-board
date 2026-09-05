@@ -239,7 +239,6 @@
       <button class="btn btn-primary" id="btnStart">▶ スタート</button>
       <button class="btn btn-dark" id="btnPause" disabled>⏸ 一時停止</button>
       <button class="btn btn-dark" id="btnReset">↺ リセット</button>
-      <button class="btn btn-dark" id="btnFullscreen">⛶ 表示を全画面</button>
     </div>
     <div class="score-controls">
       <div class="team-control red">
@@ -280,7 +279,7 @@
       <button class="btn btn-dark" id="btnZeroBoth">両チーム 0点に戻す</button>
     </div>
     <div class="hint">
-      スペース: 開始/停止 | R: リセット | F: 表示を全画面
+      スペース: 開始/停止 | R: リセット
     </div>
   </div>
 
@@ -303,7 +302,6 @@ const inputNameBlue = document.getElementById('inputNameBlue');
 const btnStart = document.getElementById('btnStart');
 const btnPause = document.getElementById('btnPause');
 const btnReset = document.getElementById('btnReset');
-const btnFullscreen = document.getElementById('btnFullscreen');
 const btnOpenDisplay = document.getElementById('btnOpenDisplay');
 const statusText = document.getElementById('statusText');
 
@@ -409,10 +407,6 @@ btnReset.addEventListener('click', ()=>{
   showPreviewCountdown('READY', false);
   broadcastCmd('reset');
 });
-btnFullscreen.addEventListener('click', ()=>{
-  broadcastCmd('fullscreen');
-});
-
 // Scores
 document.querySelectorAll('[data-team][data-delta]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -508,7 +502,7 @@ document.addEventListener('keydown', (e)=>{
   if (e.target.tagName==='INPUT') return;
   if (e.code==='Space') { e.preventDefault(); if(state.isRunning) btnPause.click(); else btnStart.click(); }
   if (e.key.toLowerCase()==='r') btnReset.click();
-  if (e.key.toLowerCase()==='f') btnFullscreen.click();
+
 });
 
 // Init
