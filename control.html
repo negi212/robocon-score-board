@@ -221,6 +221,7 @@
       <div class="timer"><span id="pTimerMin">0</span><span class="colon">:</span><span id="pTimerSec">00</span></div>
     </div>
     <div id="previewCountdown" class="countdown-overlay"><div id="previewCountdownText" class="countdown-text"></div></div>
+  <audio id="countdownSound" src="sounds/countdown.mp3" preload="auto"></audio>
     <div class="scores">
       <div class="team red">
         <div class="team-inner-black"><div class="score" id="pScoreRed">0</div></div>
@@ -309,6 +310,7 @@ let displayWin = null;
 let bc = null;
 try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
 
+let lastCountdownPlay=-1;
 let state = {
   initialSeconds: 3*60,
   remaining: 0,
@@ -446,7 +448,7 @@ if (bc) {
       statusText.textContent = `表示画面と同期中... ${formatTimer(state.remaining).m}:${formatTimer(state.remaining).s} ${state.isRunning?'●進行中':'○停止中'}`;
     } else if (msg.type==='countdown') {
       if(msg.hide) hidePreviewCountdown();
-      else showPreviewCountdown(msg.text, msg.isNumber);
+      else { showPreviewCountdown(msg.text, msg.isNumber); if(msg.text==='3') playCountdownSound(); }
     } else if (msg.type==='display-ready') {
       saveState();
       statusText.textContent = '表示画面と接続しました';
@@ -471,7 +473,7 @@ window.addEventListener('message', (e)=>{
       else hidePreviewCountdown();
   } else if (msg.type==='countdown') {
     if(msg.hide) hidePreviewCountdown();
-    else showPreviewCountdown(msg.text, msg.isNumber);
+    else { showPreviewCountdown(msg.text, msg.isNumber); if(msg.text==='3') playCountdownSound(); }
   } else if (msg.type==='display-ready') {
     saveState();
   } else if (msg.type==='state' && msg.state) {

@@ -200,6 +200,7 @@
     </div>
   </div>
     <div id="countdownOverlay" class="countdown-overlay"><div id="countdownText" class="countdown-text"></div></div>
+  <audio id="countdownSound" src="sounds/countdown.mp3" preload="auto"></audio>
   <div id="hint">control.htmlで操作 | F:全画面</div>
 <script>
 const $ = s=>document.getElementById(s);
@@ -209,6 +210,7 @@ let totalSeconds=3*60, remaining=0, isRunning=false, scores={red:0,blue:0}, name
 let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
 let isCounting=false;
 let countdownIds=[];
+let lastCountdownPlay=-1;
 function showCountdown(text, isNumber){
   countdownText.textContent=text;
   countdownText.className=isNumber?'countdown-text number':'countdown-text';
@@ -272,6 +274,18 @@ function renderAll(){ renderTimer(); renderScores(); }
 function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names})); }catch{} }
 function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.names)names=s.names; if(s.scores)scores=s.scores; if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined)isRunning=s.isRunning; } }catch{} }
 function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
+let countdownAudio=document.getElementById('countdownSound');
+function playCountdownSound(){
+  try{
+    if(!countdownAudio) countdownAudio=document.getElementById('countdownSound');
+    if(countdownAudio){
+      countdownAudio.muted=false;
+      countdownAudio.currentTime=0;
+      const p=countdownAudio.play();
+      if(p) p.catch(()=>{});
+    }
+  }catch{}
+}
 let audioCtx; function beep(){ try{ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='square';o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3);o.start();o.stop(audioCtx.currentTime+0.3);}catch{} }
 function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();beep();broadcastTick();return} remaining++; renderTimer(); broadcastTick(); if(remaining>=totalSeconds){stop();beep();setTimeout(beep,400);setTimeout(beep,800);save();} }
 function start(){
