@@ -172,12 +172,11 @@ function fmt(s){ const m=Math.floor(s/60), sec=s%60; return {m:String(m), s:Stri
 function renderTimer(){ const {m,s}=fmt(remaining); timerMinEl.textContent=m; timerSecEl.textContent=s; }
 function renderScores(){
   scoreRedEl.textContent=scores.red; scoreBlueEl.textContent=scores.blue; nameRedEl.textContent=names.red||'RED'; nameBlueEl.textContent=names.blue||'BLUE';
+  // 4桁のみ自動縮小、3桁以下はCSSの固定サイズを維持
   [[scoreRedEl, scores.red],[scoreBlueEl, scores.blue]].forEach(([el,v])=>{
     const len=String(v).length;
-    if(len>=4) el.style.fontSize='min(20vh,14vw,180px)';
-    else if(len===3) el.style.fontSize='min(26vh,20vw,240px)';
-    else if(len===2) el.style.fontSize='min(30vh,26vw,300px)';
-    else el.style.fontSize='min(36vh,35vw,342px)';
+    if(len>=4) el.style.fontSize='min(22vh,16vw,200px)';
+    else el.style.fontSize='';
   });
 }
 function renderAll(){ renderTimer(); renderScores(); }
