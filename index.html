@@ -206,7 +206,9 @@
 const $ = s=>document.getElementById(s);
 const timerMinEl=$('timerMin'), timerSecEl=$('timerSec'), scoreRedEl=$('scoreRed'), scoreBlueEl=$('scoreBlue'), nameRedEl=$('nameRed'), nameBlueEl=$('nameBlue'), boardWrap=$('boardWrap'), hintEl=$('hint'), countdownOverlay=$('countdownOverlay'), countdownText=$('countdownText');
 const STORAGE_KEY='scoreboard-state-v2', CHANNEL_NAME='scoreboard';
-let totalSeconds=3*60, remaining=0, isRunning=false, scores={red:0,blue:0}, names={red:"チームA",blue:"チームB"}, timerId=null;
+// テスト用: 何秒から始めるか (0=0:00, 60=1:00, 177=2:57, 0で通常)
+const TEST_START_SECONDS = 0;
+let totalSeconds=3*60, remaining=TEST_START_SECONDS, isRunning=false, scores={red:0,blue:0}, names={red:"チームA",blue:"チームB"}, timerId=null;
 let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
 let isCounting=false;
 let countdownIds=[];
@@ -243,7 +245,7 @@ function startCountdownSequence(){
           countdownIds.push(setTimeout(()=>{
             hideCountdown();
             isCounting=false;
-            remaining=2;
+            remaining=TEST_START_SECONDS+2;
             renderTimer();
             isRunning=true;
             if(!timerId) timerId=setInterval(tick,1000);
@@ -273,7 +275,7 @@ function renderScores(){
 }
 function renderAll(){ renderTimer(); renderScores(); }
 function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names})); }catch{} }
-function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.names)names=s.names; if(s.scores)scores=s.scores; if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined)isRunning=s.isRunning; } }catch{} }
+function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.names)names=s.names; if(s.scores)scores=s.scores; if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; else if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined)isRunning=s.isRunning; } else if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; }catch{} if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; }
 function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
 let countdownAudio=document.getElementById('countdownSound');
 let countdownBuffer=null;

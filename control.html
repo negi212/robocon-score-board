@@ -286,6 +286,8 @@
 
 <script>
 const STORAGE_KEY = 'scoreboard-state-v2';
+// テスト用: 何秒から始めるか
+const TEST_START_SECONDS = 0;
 const CHANNEL_NAME = 'scoreboard';
 
 // Elements - preview
@@ -313,7 +315,7 @@ try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
 let lastCountdownPlay=-1;
 let state = {
   initialSeconds: 3*60,
-  remaining: 0,
+  remaining: TEST_START_SECONDS,
   isRunning: false,
   scores: { red: 0, blue: 0 },
   names: { red: "チームA", blue: "チームB" }
@@ -325,13 +327,15 @@ function loadState() {
     if (raw) {
       const s = JSON.parse(raw);
       state.initialSeconds = 180;
-      if (s.remaining !== undefined) state.remaining = Math.min(s.remaining, 180);
+      if (TEST_START_SECONDS!==0) state.remaining = TEST_START_SECONDS;
+      else if (s.remaining !== undefined) state.remaining = Math.min(s.remaining, 180);
       else state.remaining = 0;
       state.isRunning = s.isRunning ?? false;
       state.scores = s.scores ?? state.scores;
       state.names = s.names ?? state.names;
-    }
+    } else if(TEST_START_SECONDS!==0) state.remaining = TEST_START_SECONDS;
   } catch {}
+  if(TEST_START_SECONDS!==0) state.remaining = TEST_START_SECONDS;
 }
 function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
@@ -404,7 +408,7 @@ btnPause.addEventListener('click', ()=>{
 });
 btnReset.addEventListener('click', ()=>{
   state.scores.red=0; state.scores.blue=0;
-  state.remaining=0; state.isRunning=false;
+  state.remaining=TEST_START_SECONDS; state.isRunning=false;
   renderAndSave();
   showPreviewCountdown('READY', false);
   broadcastCmd('reset');
