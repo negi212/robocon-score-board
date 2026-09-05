@@ -236,26 +236,28 @@ function clearCountdown(){
 }
 function startCountdownSequence(){
   isCounting=true;
-  showCountdown('READY', false);
-  countdownIds.push(setTimeout(()=>{ showCountdown('3', true);
+  showCountdown('5', true);
   playCountdownSound();
-    countdownIds.push(setTimeout(()=>{ showCountdown('2', true);
-      countdownIds.push(setTimeout(()=>{ showCountdown('1', true);
-        countdownIds.push(setTimeout(()=>{
-          showCountdown('START', false);
+  countdownIds.push(setTimeout(()=>{ showCountdown('4', true);
+    countdownIds.push(setTimeout(()=>{ showCountdown('3', true);
+      countdownIds.push(setTimeout(()=>{ showCountdown('2', true);
+        countdownIds.push(setTimeout(()=>{ showCountdown('1', true);
           countdownIds.push(setTimeout(()=>{
-            hideCountdown();
-            isCounting=false;
-            remaining=TEST_START_SECONDS+2;
-            renderTimer();
-            isRunning=true;
-            if(!timerId) timerId=setInterval(tick,1000);
-            save(); broadcastTick();
-          }, 2000));
+            showCountdown('START', false);
+            countdownIds.push(setTimeout(()=>{
+              hideCountdown();
+              isCounting=false;
+              remaining=TEST_START_SECONDS+2;
+              renderTimer();
+              isRunning=true;
+              if(!timerId) timerId=setInterval(tick,1000);
+              save(); broadcastTick();
+            }, 2000));
+          }, 1000));
         }, 1000));
       }, 1000));
     }, 1000));
-  }, 2000));
+  }, 1000));
 }
 function fmt(s){ const m=Math.floor(s/60), sec=s%60; return {m:String(m), s:String(sec).padStart(2,'0')} }
 function renderTimer(){
