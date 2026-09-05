@@ -251,7 +251,6 @@
           <button class="btn btn-red" data-team="red" data-delta="10">+10</button>
         </div>
         <input class="team-input" id="inputNameRed" value="チームA" maxlength="12" placeholder="チーム名">
-        <div class="score-btns" style="margin-top:6px;"><button class="btn btn-dark" style="font-size:12px; padding:6px;" id="btnResetRed">0にリセット</button></div>
       </div>
       <div class="team-control blue">
         <div class="team-control-label"><span class="dot blue"></span> BLUE / チームB</div>
@@ -262,7 +261,6 @@
           <button class="btn btn-blue" data-team="blue" data-delta="10">+10</button>
         </div>
         <input class="team-input" id="inputNameBlue" value="チームB" maxlength="12" placeholder="チーム名">
-        <div class="score-btns" style="margin-top:6px;"><button class="btn btn-dark" style="font-size:12px; padding:6px;" id="btnResetBlue">0にリセット</button></div>
       </div>
     </div>
     <div class="control-row">
@@ -393,6 +391,9 @@ btnPause.addEventListener('click', ()=>{
   broadcastCmd('pause');
 });
 btnReset.addEventListener('click', ()=>{
+  state.scores.red=0; state.scores.blue=0;
+  state.remaining=0; state.isRunning=false;
+  renderAndSave();
   broadcastCmd('reset');
 });
 btnFullscreen.addEventListener('click', ()=>{
@@ -408,8 +409,6 @@ document.querySelectorAll('[data-team][data-delta]').forEach(btn=>{
     renderAndSave();
   });
 });
-document.getElementById('btnResetRed').addEventListener('click', ()=>{ state.scores.red=0; renderAndSave(); });
-document.getElementById('btnResetBlue').addEventListener('click', ()=>{ state.scores.blue=0; renderAndSave(); });
 document.getElementById('btnZeroBoth').addEventListener('click', ()=>{ state.scores.red=0; state.scores.blue=0; renderAndSave(); });
 document.getElementById('btnSwap').addEventListener('click', ()=>{
   const ts=state.scores.red; state.scores.red=state.scores.blue; state.scores.blue=ts;

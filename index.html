@@ -287,7 +287,7 @@ function start(){
   startCountdownSequence();
 }
 function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; clearCountdown(); save(); broadcastTick(); }
-function reset(){ clearCountdown(); stop(); remaining=0; renderTimer(); save(); broadcastTick(); }
+function reset(){ clearCountdown(); stop(); remaining=0; scores={red:0,blue:0}; renderAll(); save(); broadcastTick(); }
 function setTime(m,s){ remaining=0; isRunning=false; if(timerId)clearInterval(timerId); timerId=null; renderTimer(); save(); broadcastTick(); }
 function applyState(s){
   if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds);
