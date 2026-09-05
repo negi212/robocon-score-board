@@ -235,6 +235,7 @@ function startCountdownSequence(){
   isCounting=true;
   showCountdown('READY', false);
   countdownIds.push(setTimeout(()=>{ showCountdown('3', true);
+  playCountdownSound();
     countdownIds.push(setTimeout(()=>{ showCountdown('2', true);
       countdownIds.push(setTimeout(()=>{ showCountdown('1', true);
         countdownIds.push(setTimeout(()=>{
@@ -275,19 +276,58 @@ function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialS
 function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.names)names=s.names; if(s.scores)scores=s.scores; if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined)isRunning=s.isRunning; } }catch{} }
 function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
 let countdownAudio=document.getElementById('countdownSound');
+let countdownBuffer=null;
+let audioCtx2=null;
+try{
+  const AC = window.AudioContext||window.webkitAudioContext;
+  if(AC) audioCtx2=new AC();
+  fetch('sounds/countdown.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{countdownBuffer=buf;}).catch(()=>{})).catch(()=>{});
+}catch{}
+function unlockAudio(){
+  try{
+    if(audioCtx2 && audioCtx2.state==='suspended') audioCtx2.resume();
+    if(countdownAudio) {
+      countdownAudio.muted=true;
+      const p=countdownAudio.play();
+      if(p) p.then(()=>{ countdownAudio.pause(); countdownAudio.currentTime=0; countdownAudio.muted=false; }).catch(()=>{ countdownAudio.muted=false; });
+    }
+  }catch{}
+}
+document.addEventListener('click', unlockAudio, {once:true});
+document.addEventListener('keydown', unlockAudio, {once:true});
 function playCountdownSound(){
   try{
+    // 試行: Web Audioで再生（ブロックされにくい）
+    if(audioCtx2 && countdownBuffer){
+      if(audioCtx2.state==='suspended') audioCtx2.resume();
+      const src=audioCtx2.createBufferSource();
+      src.buffer=countdownBuffer;
+      src.connect(audioCtx2.destination);
+      src.start();
+      return;
+    }
     if(!countdownAudio) countdownAudio=document.getElementById('countdownSound');
     if(countdownAudio){
       countdownAudio.muted=false;
       countdownAudio.currentTime=0;
       const p=countdownAudio.play();
-      if(p) p.catch(()=>{});
+      if(p) p.catch(()=>{
+        // フォールバック: Web Audioでビープ
+        if(audioCtx2){
+          if(audioCtx2.state==='suspended') audioCtx2.resume();
+          const o=audioCtx2.createOscillator(), g=audioCtx2.createGain();
+          o.type='square'; o.frequency.value=880;
+          o.connect(g); g.connect(audioCtx2.destination);
+          g.gain.setValueAtTime(0.3, audioCtx2.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.01, audioCtx2.currentTime+0.3);
+          o.start(); o.stop(audioCtx2.currentTime+0.3);
+        }
+      });
     }
   }catch{}
 }
 let audioCtx; function beep(){ try{ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='square';o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3);o.start();o.stop(audioCtx.currentTime+0.3);}catch{} }
-function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();beep();broadcastTick();return} remaining++; renderTimer(); broadcastTick(); if(remaining>=totalSeconds){stop();beep();setTimeout(beep,400);setTimeout(beep,800);save();} }
+function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();beep();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); broadcastTick(); if(remaining>=totalSeconds){stop();beep();setTimeout(beep,400);setTimeout(beep,800);save();} }
 function start(){
   if(isRunning||isCounting) return;
   if(remaining>=totalSeconds) return;
