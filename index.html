@@ -225,23 +225,49 @@ function mqttHandle(m){
   if(m.type==='state'&&m.state)applyState(m.state);
   else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); }
 }
+const MQTT_BROKERS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
+  'wss://test.mosquitto.org:8081/mqtt'
+];
+const MQTT_LIB_FALLBACK = 'https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js';
+let mqttBrokerIdx = 0, mqttEverConnected = false, mqttGen = 0, mqttStateText = '○切断';
 function mqttInit(){
+  if(typeof mqtt==='undefined'){
+    updateMqttHint(); mqttStateText='○ライブラリ再読込中…'; updateMqttHint();
+    const sc = document.createElement('script');
+    sc.src = MQTT_LIB_FALLBACK;
+    sc.onload = ()=>mqttInit();
+    sc.onerror = ()=>{ mqttStateText='○CDN読込失敗(ネット接続を確認)'; updateMqttHint(); };
+    document.head.appendChild(sc);
+    return;
+  }
+  const gen = ++mqttGen;
   try{
-    if(typeof mqtt==='undefined') return;
     if(mqttClient) try{ mqttClient.end(true); }catch{}
     MQTT_TOPIC = 'robocon-score-board/' + ROOM_ID + '/sync';
-    mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', { reconnectPeriod: 2000, connectTimeout: 8000, clientId: CLIENT_ID });
-    mqttClient.on('connect', ()=>{ try{ mqttClient.subscribe(MQTT_TOPIC); }catch{} updateMqttHint(true); });
-    mqttClient.on('reconnect', ()=>updateMqttHint(false));
-    mqttClient.on('close', ()=>updateMqttHint(false));
-    mqttClient.on('error', ()=>updateMqttHint(false));
+    const url = MQTT_BROKERS[mqttBrokerIdx % MQTT_BROKERS.length];
+    let host = url; try{ host = url.split('/')[2]; }catch{}
+    mqttStateText='○接続試行中…(' + host + ')'; updateMqttHint();
+    mqttClient = mqtt.connect(url, { reconnectPeriod: 2000, connectTimeout: 8000, clientId: CLIENT_ID });
+    mqttClient.on('connect', ()=>{ if(gen!==mqttGen) return; mqttEverConnected=true; try{ mqttClient.subscribe(MQTT_TOPIC); }catch{} mqttStateText='●接続中(' + host + ')'; updateMqttHint(); });
+    const fail = ()=>{
+      if(gen!==mqttGen) return;
+      if(mqttEverConnected){ mqttStateText='○切断(再接続中…)'; updateMqttHint(); return; }
+      mqttBrokerIdx++;
+      mqttStateText='○次ブローカー試行中…'; updateMqttHint();
+      setTimeout(()=>{ if(gen===mqttGen) mqttInit(); }, 1500);
+    };
+    mqttClient.on('error', (e)=>{ console.log('[mqtt] error', e && e.message); fail(); });
+    mqttClient.on('close', ()=>{ if(gen!==mqttGen) return; if(mqttEverConnected){ mqttStateText='○切断(再接続中…)'; updateMqttHint(); } else fail(); });
+    mqttClient.on('reconnect', ()=>{ if(gen===mqttGen){ mqttStateText='○再接続中…'; updateMqttHint(); } });
     mqttClient.on('message', (t, buf)=>{ try{ mqttHandle(JSON.parse(buf.toString())); }catch{} });
-  }catch{}
+  }catch(e){ mqttStateText='○初期化失敗:' + e; updateMqttHint(); }
 }
-function updateMqttHint(ok){
+function updateMqttHint(){
   try{
     const base='control.htmlで操作 | F:全画面';
-    hintEl.textContent = base + ' | room:' + ROOM_ID + (ok ? ' ●' : ' ○');
+    hintEl.textContent = base + ' | room:' + ROOM_ID + ' ' + mqttStateText;
   }catch{}
 }
 let isCounting=false;
@@ -436,7 +462,7 @@ load(); renderAll();
 if(!isRunning && remaining===0) showCountdown('READY', false);
 if(isRunning) timerId=setInterval(tick,1000);
 setTimeout(()=>{ const m={type:'display-ready'}; if(bc)try{bc.postMessage(m)}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} mqttPublish({type:'display-ready'}); },300);
-mqttInit(); updateMqttHint(false);
+mqttInit();
 </script>
 </body>
 </html>

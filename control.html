@@ -325,7 +325,24 @@ let MQTT_TOPIC = 'robocon-score-board/' + ROOM_ID + '/sync';
 const CLIENT_ID = 'c-' + Math.random().toString(36).slice(2,9);
 let mqttClient = null;
 function mqttPublish(m){ try{ if(mqttClient && mqttClient.connected){ m._from=CLIENT_ID; mqttClient.publish(MQTT_TOPIC, JSON.stringify(m)); } }catch{} }
-function mqttSetStatus(ok){ try{ document.getElementById('mqttStatus').textContent = 'MQTT: ' + (ok ? '●接続中' : '○切断'); }catch{} }
+const MQTT_BROKERS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
+  'wss://test.mosquitto.org:8081/mqtt'
+];
+const MQTT_LIB_FALLBACK = 'https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js';
+let mqttBrokerIdx = 0, mqttEverConnected = false, mqttGen = 0;
+function mqttSetStatus(t){ try{ document.getElementById('mqttStatus').textContent = 'MQTT: ' + t; }catch{} console.log('[mqtt]', t); }
+function mqttHost(url){ try{ return url.split('/')[2]; }catch{ return url; } }
+function ensureMqttLib(cb){
+  if(typeof mqtt!=='undefined') return cb();
+  mqttSetStatus('○ライブラリ再読込中…');
+  const sc = document.createElement('script');
+  sc.src = MQTT_LIB_FALLBACK;
+  sc.onload = ()=>cb();
+  sc.onerror = ()=>mqttSetStatus('○CDN読込失敗(ネット接続を確認)');
+  document.head.appendChild(sc);
+}
 function onRemoteMsg(msg){
   if(!msg || !msg.type) return;
   if(msg._from === CLIENT_ID) return;
@@ -346,17 +363,28 @@ function onRemoteMsg(msg){
   }
 }
 function mqttInit(){
-  try{
-    if(typeof mqtt==='undefined'){ mqttSetStatus(false); return; }
-    if(mqttClient) try{ mqttClient.end(true); }catch{}
-    MQTT_TOPIC = 'robocon-score-board/' + ROOM_ID + '/sync';
-    mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', { reconnectPeriod: 2000, connectTimeout: 8000, clientId: CLIENT_ID });
-    mqttClient.on('connect', ()=>{ try{ mqttClient.subscribe(MQTT_TOPIC); }catch{} mqttSetStatus(true); });
-    mqttClient.on('reconnect', ()=>mqttSetStatus(false));
-    mqttClient.on('close', ()=>mqttSetStatus(false));
-    mqttClient.on('error', ()=>mqttSetStatus(false));
-    mqttClient.on('message', (t, buf)=>{ try{ onRemoteMsg(JSON.parse(buf.toString())); }catch{} });
-  }catch{ mqttSetStatus(false); }
+  ensureMqttLib(()=>{
+    const gen = ++mqttGen;
+    try{
+      if(mqttClient) try{ mqttClient.end(true); }catch{}
+      MQTT_TOPIC = 'robocon-score-board/' + ROOM_ID + '/sync';
+      const url = MQTT_BROKERS[mqttBrokerIdx % MQTT_BROKERS.length];
+      mqttSetStatus('○接続試行中…(' + mqttHost(url) + ')');
+      mqttClient = mqtt.connect(url, { reconnectPeriod: 2000, connectTimeout: 8000, clientId: CLIENT_ID });
+      mqttClient.on('connect', ()=>{ if(gen!==mqttGen) return; mqttEverConnected=true; try{ mqttClient.subscribe(MQTT_TOPIC); }catch{} mqttSetStatus('●接続中(' + mqttHost(url) + ')'); });
+      const fail = ()=>{
+        if(gen!==mqttGen) return;
+        if(mqttEverConnected){ mqttSetStatus('○切断(再接続中…)'); return; }
+        mqttBrokerIdx++;
+        mqttSetStatus('○次ブローカー試行中…');
+        setTimeout(()=>{ if(gen===mqttGen) mqttInit(); }, 1500);
+      };
+      mqttClient.on('error', (e)=>{ console.log('[mqtt] error', e && e.message); fail(); });
+      mqttClient.on('close', ()=>{ if(gen!==mqttGen) return; if(mqttEverConnected) mqttSetStatus('○切断(再接続中…)'); else fail(); });
+      mqttClient.on('reconnect', ()=>{ if(gen===mqttGen) mqttSetStatus('○再接続中…'); });
+      mqttClient.on('message', (t, buf)=>{ try{ onRemoteMsg(JSON.parse(buf.toString())); }catch{} });
+    }catch(e){ mqttSetStatus('○初期化失敗:' + e); }
+  });
 }
 
 let lastCountdownPlay=-1;
