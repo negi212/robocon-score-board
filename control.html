@@ -228,7 +228,6 @@
       <div class="timer"><span id="pTimerMin">0</span><span class="colon">:</span><span id="pTimerSec">00</span></div>
     </div>
     <div id="previewCountdown" class="countdown-overlay"><div id="previewCountdownText" class="countdown-text"></div></div>
-  <audio id="countdownSound" src="sounds/countdown.mp3" preload="auto"></audio>
     <div class="scores">
       <div class="team red">
         <div class="team-inner-black"><div class="score" id="pScoreRed">0</div></div>
@@ -357,7 +356,7 @@ function onRemoteMsg(msg){
     statusText.textContent = `表示画面と同期中... ${formatTimer(state.remaining).m}:${formatTimer(state.remaining).s} ${state.isRunning?'●進行中':'○停止中'}`;
   } else if(msg.type==='countdown'){
     if(msg.hide) hidePreviewCountdown();
-    else { showPreviewCountdown(msg.text, msg.isNumber); if(msg.text==='3') playCountdownSound(); }
+    else showPreviewCountdown(msg.text, msg.isNumber);
   } else if(msg.type==='display-ready'){ saveState(); statusText.textContent = '表示画面と接続しました'; }
   else if(msg.type==='state' && msg.state){
     if(msg.state.scores) state.scores=msg.state.scores;
@@ -392,7 +391,6 @@ function mqttInit(){
   });
 }
 
-let lastCountdownPlay=-1;
 let state = {
   initialSeconds: 3*60,
   remaining: TEST_START_SECONDS,
@@ -437,7 +435,7 @@ function broadcastCmd(action, payload={}) {
 
 // --- Firebase sync (cross-device, prefers over MQTT when configured) ---
 let NET = 'mqtt';
-let fbDb = null, fbRefs = [];
+let fbDb = null, fbRefs = [], lastPingAt = 0, lastCdAt = 0;
 function fbRoomName(){ try{ return ((ROOM_ID||'default').replace(/[.#$\[\]/]/g,'_'))||'default'; }catch{ return 'default'; } }
 function fbBase(){ return 'rooms/' + fbRoomName(); }
 function fbConfigured(){
@@ -465,11 +463,13 @@ function fbInit(){
     const cd = fbDb.ref(base + '/countdown');
     cd.on('value', snap=>{
       const v=snap.val(); if(!v) return;
+      if(v.at !== undefined && v.at === lastCdAt) return;
+      lastCdAt = v.at;
       onRemoteMsg({type:'countdown', text:v.text, isNumber:v.isNumber, hide:v.hide, _from:'firebase'});
     });
     fbRefs.push(cd);
     const ping = fbDb.ref(base + '/displayPing');
-    ping.on('value', snap=>{ if(!snap.val()) return; saveState(); statusText.textContent = '表示画面と接続しました'; });
+    ping.on('value', snap=>{ const v=snap.val(); if(!v||!v.at||v.at===lastPingAt) return; lastPingAt=v.at; saveState(); statusText.textContent = '表示画面と接続しました'; });
     fbRefs.push(ping);
     const conn = fbDb.ref('.info/connected');
     conn.on('value', snap=>{ fbStatus(snap.val() ? '●接続中' : '○切断'); });
@@ -508,25 +508,6 @@ function hidePreviewCountdown(){
   if(!previewCountdown) return;
   previewCountdown.classList.remove('active');
 }
-let countdownAudioEl = document.getElementById('countdownSound');
-function playCountdownSound(){
-  try{
-    if(countdownAudioEl){
-      countdownAudioEl.muted=false;
-      countdownAudioEl.currentTime=0;
-      const p=countdownAudioEl.play();
-      if(p) p.catch(()=>{});
-    }
-  }catch{}
-}
-document.addEventListener('click', ()=>{
-  try{
-    if(!countdownAudioEl) return;
-    countdownAudioEl.muted=true;
-    const p=countdownAudioEl.play();
-    if(p) p.then(()=>{ countdownAudioEl.pause(); countdownAudioEl.currentTime=0; countdownAudioEl.muted=false; }).catch(()=>{ countdownAudioEl.muted=false; });
-  }catch{}
-}, {once:true});
 function renderPreview() {
   const { m, s } = formatTimer(state.remaining);
   pMin.textContent = m;
@@ -613,7 +594,7 @@ if (bc) {
       statusText.textContent = `表示画面と同期中... ${formatTimer(state.remaining).m}:${formatTimer(state.remaining).s} ${state.isRunning?'●進行中':'○停止中'}`;
     } else if (msg.type==='countdown') {
       if(msg.hide) hidePreviewCountdown();
-      else { showPreviewCountdown(msg.text, msg.isNumber); if(msg.text==='3') playCountdownSound(); }
+      else showPreviewCountdown(msg.text, msg.isNumber);
     } else if (msg.type==='display-ready') {
       saveState();
       statusText.textContent = '表示画面と接続しました';
@@ -638,7 +619,7 @@ window.addEventListener('message', (e)=>{
       else hidePreviewCountdown();
   } else if (msg.type==='countdown') {
     if(msg.hide) hidePreviewCountdown();
-    else { showPreviewCountdown(msg.text, msg.isNumber); if(msg.text==='3') playCountdownSound(); }
+    else showPreviewCountdown(msg.text, msg.isNumber);
   } else if (msg.type==='display-ready') {
     saveState();
   } else if (msg.type==='state' && msg.state) {

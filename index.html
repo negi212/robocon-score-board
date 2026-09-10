@@ -326,7 +326,7 @@ function startCountdownSequence(){
 }
 // --- Firebase sync (cross-device, prefers over MQTT when configured) ---
 let NET = 'mqtt';
-let fbDb = null, fbRefs = [], fbRoom = 'default', fbStateText = 'fb:○';
+let fbDb = null, fbRefs = [], fbRoom = 'default', fbStateText = 'fb:○', lastCmdKey = null;
 function fbRoomName(){ try{ return ((ROOM_ID||'default').replace(/[.#$\[\]/]/g,'_'))||'default'; }catch{ return 'default'; } }
 function fbBase(){ return 'rooms/' + fbRoom; }
 function fbConfigured(){
@@ -352,6 +352,8 @@ function fbInit(){
     const cmdQ = fbDb.ref(base + '/cmd').limitToLast(1);
     const boot = Date.now();
     cmdQ.on('child_added', snap=>{
+      if(snap.key === lastCmdKey) return;
+      lastCmdKey = snap.key;
       const v=snap.val(); if(!v||!v.action) return;
       if(!v.at || v.at < boot - 5000) return;
       mqttHandle({type:'cmd', action:v.action, initialSeconds:v.initialSeconds, _from:'firebase'});
@@ -499,7 +501,7 @@ function applyState(s){
       else isRunning=s.isRunning;
     }
   }
-  if(s.scores)scores=s.scores; if(s.names)names=s.names; renderAll();
+  if(s.scores)scores=s.scores; if(s.names)names=s.names; renderAll(); save();
 }
 if(bc) bc.onmessage=e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } };
 window.addEventListener('message',e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } });
