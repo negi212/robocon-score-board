@@ -326,6 +326,7 @@ const CLIENT_ID = 'c-' + Math.random().toString(36).slice(2,9);
 let mqttClient = null;
 function mqttPublish(m){ try{ if(mqttClient && mqttClient.connected){ m._from=CLIENT_ID; mqttClient.publish(MQTT_TOPIC, JSON.stringify(m)); } }catch{} }
 const MQTT_BROKERS = [
+  'wss://mqtt.eclipseprojects.io:443/mqtt',
   'wss://broker.emqx.io:8084/mqtt',
   'wss://broker.hivemq.com:8884/mqtt',
   'wss://test.mosquitto.org:8081/mqtt'
