@@ -64,9 +64,10 @@ GitHubに上げても問題ありません。
 
 ### 設定手順
 
-1. https://console.cloud.google.com/ を開き、Firebaseと同じプロジェクトを選択
-   (Firebaseコンソールの「プロジェクトの設定」→「全般」→「プロジェクトID」で確認)
-2. 左メニュー「APIとサービス」→「認証情報」
+1. https://console.cloud.google.com/apis/credentials を開く
+   ※ Firebaseコンソール (スクショの画面) ではなく、Google Cloudコンソール側での設定です。
+   Firebaseプロジェクトは自動的にGoogle Cloudプロジェクトでもあるため、上部で同じプロジェクト名を
+   選択するだけでOKです (プロジェクトIDはFirebaseコンソールの「設定」→「全般」で確認可)
 3. 「APIキー」欄の `Browser key (auto created by Firebase)` をクリック
 4. 「アプリケーションの制限」で「HTTPリファラー」を選択し、以下を追加:
    - `https://negi212.github.io/*`
