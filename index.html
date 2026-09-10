@@ -204,6 +204,9 @@
   <audio id="buzzerSound" src="sounds/buzzer.mp3" preload="auto"></audio>
   <div id="hint">control.htmlで操作 | F:全画面</div>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 const $ = s=>document.getElementById(s);
 const timerMinEl=$('timerMin'), timerSecEl=$('timerSec'), scoreRedEl=$('scoreRed'), scoreBlueEl=$('scoreBlue'), nameRedEl=$('nameRed'), nameBlueEl=$('nameBlue'), boardWrap=$('boardWrap'), hintEl=$('hint'), countdownOverlay=$('countdownOverlay'), countdownText=$('countdownText');
@@ -268,7 +271,7 @@ function mqttInit(){
 function updateMqttHint(){
   try{
     const base='control.htmlで操作 | F:全画面';
-    hintEl.textContent = base + ' | room:' + ROOM_ID + ' ' + mqttStateText;
+    hintEl.textContent = base + ' | room:' + ROOM_ID + ' ' + mqttStateText + ' ' + fbStateText;
   }catch{}
 }
 let isCounting=false;
@@ -281,14 +284,14 @@ function showCountdown(text, isNumber){
   const msg={type:'countdown', text, isNumber};
   if(bc) try{bc.postMessage(msg)}catch{}
   if(window.opener) try{window.opener.postMessage(msg,'*')}catch{}
-  mqttPublish({type:'countdown', text, isNumber});
+  mqttPublish({type:'countdown', text, isNumber}); fbPublishCountdown(text, isNumber);
 }
 function hideCountdown(){
   countdownOverlay.classList.remove('active');
   const msg={type:'countdown', hide:true};
   if(bc) try{bc.postMessage(msg)}catch{}
   if(window.opener) try{window.opener.postMessage(msg,'*')}catch{}
-  mqttPublish({type:'countdown', hide:true});
+  mqttPublish({type:'countdown', hide:true}); fbPublishCountdownHide();
 }
 function clearCountdown(){
   countdownIds.forEach(id=>clearTimeout(id));
@@ -321,6 +324,52 @@ function startCountdownSequence(){
     }, 1000));
   }, 1000));
 }
+// --- Firebase sync (cross-device, prefers over MQTT when configured) ---
+let NET = 'mqtt';
+let fbDb = null, fbRefs = [], fbRoom = 'default', fbStateText = 'fb:○';
+function fbRoomName(){ try{ return ((ROOM_ID||'default').replace(/[.#$\[\]/]/g,'_'))||'default'; }catch{ return 'default'; } }
+function fbBase(){ return 'rooms/' + fbRoom; }
+function fbConfigured(){
+  try{
+    return (typeof FIREBASE_CONFIG!=='undefined') && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey &&
+      FIREBASE_CONFIG.apiKey!=='PASTE_ME' && (typeof firebase!=='undefined');
+  }catch{ return false; }
+}
+function fbStatus(t){ fbStateText='fb:'+t; try{ updateMqttHint(); }catch{} console.log('[fb]', t); }
+function fbInit(){
+  try{
+    if(typeof firebase==='undefined'){ fbStatus('○SDK読込失敗'); return; }
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    fbDb = firebase.database();
+    fbRefs.forEach(r=>{ try{ r.off(); }catch{} });
+    fbRefs = [];
+    fbRoom = fbRoomName();
+    fbStatus('○接続試行中…');
+    const base = fbBase();
+    const st = fbDb.ref(base + '/state');
+    st.on('value', snap=>{ const v=snap.val(); if(!v) return; mqttHandle({type:'state', state:v, _from:'firebase'}); });
+    fbRefs.push(st);
+    const cmdQ = fbDb.ref(base + '/cmd').limitToLast(1);
+    const boot = Date.now();
+    cmdQ.on('child_added', snap=>{
+      const v=snap.val(); if(!v||!v.action) return;
+      if(!v.at || v.at < boot - 5000) return;
+      mqttHandle({type:'cmd', action:v.action, initialSeconds:v.initialSeconds, _from:'firebase'});
+    });
+    fbRefs.push(cmdQ);
+    const conn = fbDb.ref('.info/connected');
+    conn.on('value', snap=>{ fbStatus(snap.val() ? '●接続中' : '○切断'); });
+    fbRefs.push(conn);
+  }catch(e){ fbStatus('○初期化失敗'); }
+}
+function fbPublishTick(){ try{ if(NET!=='firebase'||!fbDb) return; fbDb.ref(fbBase()+'/tick').set({remaining, isRunning, at:Date.now()}); }catch{} }
+function fbPublishCountdown(text, isNumber){ try{ if(NET!=='firebase'||!fbDb) return; fbDb.ref(fbBase()+'/countdown').set({text, isNumber:!!isNumber, at:Date.now()}); }catch{} }
+function fbPublishCountdownHide(){ try{ if(NET!=='firebase'||!fbDb) return; fbDb.ref(fbBase()+'/countdown').set({hide:true, at:Date.now()}); }catch{} }
+function fbPublishPing(){ try{ if(NET!=='firebase'||!fbDb) return; fbDb.ref(fbBase()+'/displayPing').set({at:Date.now()}); }catch{} }
+function netInit(){
+  if(fbConfigured()){ NET='firebase'; try{ if(mqttClient) mqttClient.end(true); }catch{} fbStatus('○未接続'); fbInit(); }
+  else { NET='mqtt'; fbStatus('○未設定'); mqttInit(); }
+}
 function fmt(s){ const m=Math.floor(s/60), sec=s%60; return {m:String(m), s:String(sec).padStart(2,'0')} }
 function renderTimer(){
   const {m,s}=fmt(remaining);
@@ -341,7 +390,7 @@ function renderScores(){
 function renderAll(){ renderTimer(); renderScores(); }
 function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names})); }catch{} }
 function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.names)names=s.names; if(s.scores)scores=s.scores; if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; else if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined)isRunning=s.isRunning; } else if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; }catch{} if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; }
-function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; mqttPublish({type:'tick',remaining,isRunning}); try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
+function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; mqttPublish({type:'tick',remaining,isRunning}); fbPublishTick(); try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
 let countdownAudio=document.getElementById('countdownSound');
 let buzzerAudio=document.getElementById('buzzerSound');
 let countdownBuffer=null;
@@ -462,8 +511,8 @@ setTimeout(showHint,600);
 load(); renderAll();
 if(!isRunning && remaining===0) showCountdown('READY', false);
 if(isRunning) timerId=setInterval(tick,1000);
-setTimeout(()=>{ const m={type:'display-ready'}; if(bc)try{bc.postMessage(m)}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} mqttPublish({type:'display-ready'}); },300);
-mqttInit();
+setTimeout(()=>{ const m={type:'display-ready'}; if(bc)try{bc.postMessage(m)}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} mqttPublish({type:'display-ready'}); fbPublishPing(); },300);
+netInit();
 </script>
 </body>
 </html>

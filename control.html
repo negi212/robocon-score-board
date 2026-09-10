@@ -219,6 +219,7 @@
     <button class="preset-btn" id="btnApplyRoom">適用</button>
     <button class="preset-btn" id="btnCopyDisplayUrl">表示用URLをコピー</button>
     <span id="mqttStatus">MQTT: ○</span>
+    <span id="fbStatus">Firebase: ○</span>
   </div>
 
   <!-- プレビュー -->
@@ -291,6 +292,9 @@
   </div>
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 const STORAGE_KEY = 'scoreboard-state-v2';
 // テスト用: 何秒から始めるか
@@ -416,6 +420,7 @@ function loadState() {
 function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
   mqttPublish({ type: 'state', state });
+  fbPublishState();
   const msg = { type: 'state', state };
   if (bc) try { bc.postMessage(msg); } catch {}
   if (displayWin && !displayWin.closed) {
@@ -424,11 +429,70 @@ function saveState() {
 }
 function broadcastCmd(action, payload={}) {
   mqttPublish({ type: 'cmd', action, ...payload });
+  fbPublishCmd(action, payload);
   const msg = { type: 'cmd', action, ...payload };
   if (bc) try { bc.postMessage(msg); } catch {}
   if (displayWin && !displayWin.closed) try { displayWin.postMessage(msg, '*'); } catch {}
 }
 
+// --- Firebase sync (cross-device, prefers over MQTT when configured) ---
+let NET = 'mqtt';
+let fbDb = null, fbRefs = [];
+function fbRoomName(){ try{ return ((ROOM_ID||'default').replace(/[.#$\[\]/]/g,'_'))||'default'; }catch{ return 'default'; } }
+function fbBase(){ return 'rooms/' + fbRoomName(); }
+function fbConfigured(){
+  try{
+    return (typeof FIREBASE_CONFIG!=='undefined') && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey &&
+      FIREBASE_CONFIG.apiKey!=='PASTE_ME' && (typeof firebase!=='undefined');
+  }catch{ return false; }
+}
+function fbStatus(t){ try{ document.getElementById('fbStatus').textContent = 'Firebase: ' + t; }catch{} console.log('[fb]', t); }
+function fbInit(){
+  try{
+    if(typeof firebase==='undefined'){ fbStatus('○SDK読込失敗'); return; }
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    fbDb = firebase.database();
+    fbRefs.forEach(r=>{ try{ r.off(); }catch{} });
+    fbRefs = [];
+    const base = fbBase();
+    fbStatus('○接続試行中…');
+    const tick = fbDb.ref(base + '/tick');
+    tick.on('value', snap=>{
+      const v=snap.val(); if(!v || v.remaining===undefined) return;
+      onRemoteMsg({type:'tick', remaining:v.remaining, isRunning:!!v.isRunning, _from:'firebase'});
+    });
+    fbRefs.push(tick);
+    const cd = fbDb.ref(base + '/countdown');
+    cd.on('value', snap=>{
+      const v=snap.val(); if(!v) return;
+      onRemoteMsg({type:'countdown', text:v.text, isNumber:v.isNumber, hide:v.hide, _from:'firebase'});
+    });
+    fbRefs.push(cd);
+    const ping = fbDb.ref(base + '/displayPing');
+    ping.on('value', snap=>{ if(!snap.val()) return; saveState(); statusText.textContent = '表示画面と接続しました'; });
+    fbRefs.push(ping);
+    const conn = fbDb.ref('.info/connected');
+    conn.on('value', snap=>{ fbStatus(snap.val() ? '●接続中' : '○切断'); });
+    fbRefs.push(conn);
+  }catch(e){ fbStatus('○初期化失敗'); }
+}
+function fbPublishState(){
+  try{
+    if(NET!=='firebase'||!fbDb) return;
+    fbDb.ref(fbBase()+'/state').set({initialSeconds:state.initialSeconds, remaining:state.remaining,
+      isRunning:state.isRunning, scores:state.scores, names:state.names, at:Date.now()});
+  }catch{}
+}
+function fbPublishCmd(action, payload){
+  try{
+    if(NET!=='firebase'||!fbDb) return;
+    fbDb.ref(fbBase()+'/cmd').push(Object.assign({action, at:Date.now()}, payload||{}));
+  }catch{}
+}
+function netInit(){
+  if(fbConfigured()){ NET='firebase'; try{ if(mqttClient) mqttClient.end(true); }catch{} mqttSetStatus('○Firebase使用中'); fbInit(); }
+  else { NET='mqtt'; fbStatus('○未設定'); mqttInit(); }
+}
 function formatTimer(sec) {
   const m = Math.floor(sec/60);
   const s = sec%60;
@@ -610,11 +674,11 @@ document.addEventListener('keydown', (e)=>{
 
 // Init
 try{ const ri=document.getElementById('roomInput'); if(ri) ri.value=ROOM_ID; }catch{}
-mqttInit();
+netInit();
 try{
   document.getElementById('btnApplyRoom').addEventListener('click', ()=>{
     const v=(document.getElementById('roomInput').value||'default').trim()||'default';
-    ROOM_ID=v; mqttInit(); saveState();
+    ROOM_ID=v; netInit(); saveState();
     statusText.textContent='ルーム切替: '+ROOM_ID;
   });
   document.getElementById('btnCopyDisplayUrl').addEventListener('click', async ()=>{
