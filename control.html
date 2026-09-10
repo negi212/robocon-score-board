@@ -214,6 +214,12 @@
     <button class="btn-open" id="btnOpenDisplay">⛶ 表示画面を開く（別ウィンドウ）</button>
   </div>
   <div class="status"><span class="dot-live"></span><span id="statusText">表示画面を待機中...</span></div>
+  <div class="status" style="gap:8px;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;">
+    <span>ルーム: <input id="roomInput" value="default" style="width:120px;background:#0a0a0a;border:1px solid #333;border-radius:6px;color:#fff;text-align:center;padding:4px;" maxlength="32"></span>
+    <button class="preset-btn" id="btnApplyRoom">適用</button>
+    <button class="preset-btn" id="btnCopyDisplayUrl">表示用URLをコピー</button>
+    <span id="mqttStatus">MQTT: ○</span>
+  </div>
 
   <!-- プレビュー -->
   <div class="preview" id="preview">
@@ -284,6 +290,7 @@
     </div>
   </div>
 
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
 const STORAGE_KEY = 'scoreboard-state-v2';
 // テスト用: 何秒から始めるか
@@ -311,6 +318,46 @@ const statusText = document.getElementById('statusText');
 let displayWin = null;
 let bc = null;
 try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+// --- cross-device sync via public MQTT (room separated) ---
+const _cqp = new URLSearchParams(location.search);
+let ROOM_ID = _cqp.get('room') || 'default';
+let MQTT_TOPIC = 'robocon-score-board/' + ROOM_ID + '/sync';
+const CLIENT_ID = 'c-' + Math.random().toString(36).slice(2,9);
+let mqttClient = null;
+function mqttPublish(m){ try{ if(mqttClient && mqttClient.connected){ m._from=CLIENT_ID; mqttClient.publish(MQTT_TOPIC, JSON.stringify(m)); } }catch{} }
+function mqttSetStatus(ok){ try{ document.getElementById('mqttStatus').textContent = 'MQTT: ' + (ok ? '●接続中' : '○切断'); }catch{} }
+function onRemoteMsg(msg){
+  if(!msg || !msg.type) return;
+  if(msg._from === CLIENT_ID) return;
+  if(msg.type==='tick'){
+    state.remaining = msg.remaining; state.isRunning = msg.isRunning; renderPreview();
+    if(state.remaining===0 && !state.isRunning) showPreviewCountdown('READY', false); else hidePreviewCountdown();
+    statusText.textContent = `表示画面と同期中... ${formatTimer(state.remaining).m}:${formatTimer(state.remaining).s} ${state.isRunning?'●進行中':'○停止中'}`;
+  } else if(msg.type==='countdown'){
+    if(msg.hide) hidePreviewCountdown();
+    else { showPreviewCountdown(msg.text, msg.isNumber); if(msg.text==='3') playCountdownSound(); }
+  } else if(msg.type==='display-ready'){ saveState(); statusText.textContent = '表示画面と接続しました'; }
+  else if(msg.type==='state' && msg.state){
+    if(msg.state.scores) state.scores=msg.state.scores;
+    if(msg.state.names) state.names=msg.state.names;
+    if(msg.state.remaining!==undefined) state.remaining=msg.state.remaining;
+    if(msg.state.isRunning!==undefined) state.isRunning=msg.state.isRunning;
+    renderPreview();
+  }
+}
+function mqttInit(){
+  try{
+    if(typeof mqtt==='undefined'){ mqttSetStatus(false); return; }
+    if(mqttClient) try{ mqttClient.end(true); }catch{}
+    MQTT_TOPIC = 'robocon-score-board/' + ROOM_ID + '/sync';
+    mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', { reconnectPeriod: 2000, connectTimeout: 8000, clientId: CLIENT_ID });
+    mqttClient.on('connect', ()=>{ try{ mqttClient.subscribe(MQTT_TOPIC); }catch{} mqttSetStatus(true); });
+    mqttClient.on('reconnect', ()=>mqttSetStatus(false));
+    mqttClient.on('close', ()=>mqttSetStatus(false));
+    mqttClient.on('error', ()=>mqttSetStatus(false));
+    mqttClient.on('message', (t, buf)=>{ try{ onRemoteMsg(JSON.parse(buf.toString())); }catch{} });
+  }catch{ mqttSetStatus(false); }
+}
 
 let lastCountdownPlay=-1;
 let state = {
@@ -339,6 +386,7 @@ function loadState() {
 }
 function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  mqttPublish({ type: 'state', state });
   const msg = { type: 'state', state };
   if (bc) try { bc.postMessage(msg); } catch {}
   if (displayWin && !displayWin.closed) {
@@ -346,6 +394,7 @@ function saveState() {
   }
 }
 function broadcastCmd(action, payload={}) {
+  mqttPublish({ type: 'cmd', action, ...payload });
   const msg = { type: 'cmd', action, ...payload };
   if (bc) try { bc.postMessage(msg); } catch {}
   if (displayWin && !displayWin.closed) try { displayWin.postMessage(msg, '*'); } catch {}
@@ -366,6 +415,25 @@ function hidePreviewCountdown(){
   if(!previewCountdown) return;
   previewCountdown.classList.remove('active');
 }
+let countdownAudioEl = document.getElementById('countdownSound');
+function playCountdownSound(){
+  try{
+    if(countdownAudioEl){
+      countdownAudioEl.muted=false;
+      countdownAudioEl.currentTime=0;
+      const p=countdownAudioEl.play();
+      if(p) p.catch(()=>{});
+    }
+  }catch{}
+}
+document.addEventListener('click', ()=>{
+  try{
+    if(!countdownAudioEl) return;
+    countdownAudioEl.muted=true;
+    const p=countdownAudioEl.play();
+    if(p) p.then(()=>{ countdownAudioEl.pause(); countdownAudioEl.currentTime=0; countdownAudioEl.muted=false; }).catch(()=>{ countdownAudioEl.muted=false; });
+  }catch{}
+}, {once:true});
 function renderPreview() {
   const { m, s } = formatTimer(state.remaining);
   pMin.textContent = m;
@@ -512,6 +580,20 @@ document.addEventListener('keydown', (e)=>{
 });
 
 // Init
+try{ const ri=document.getElementById('roomInput'); if(ri) ri.value=ROOM_ID; }catch{}
+mqttInit();
+try{
+  document.getElementById('btnApplyRoom').addEventListener('click', ()=>{
+    const v=(document.getElementById('roomInput').value||'default').trim()||'default';
+    ROOM_ID=v; mqttInit(); saveState();
+    statusText.textContent='ルーム切替: '+ROOM_ID;
+  });
+  document.getElementById('btnCopyDisplayUrl').addEventListener('click', async ()=>{
+    const url=new URL('index.html', location.href); url.searchParams.set('room', ROOM_ID);
+    try{ await navigator.clipboard.writeText(url.toString()); statusText.textContent='表示用URLをコピーしました: '+url.toString(); }
+    catch{ prompt('表示用URLをコピーしてください', url.toString()); }
+  });
+}catch{}
 loadState();
 renderPreview();
 if(!state.isRunning && state.remaining===0) showPreviewCountdown('READY', false);

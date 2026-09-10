@@ -203,6 +203,7 @@
   <audio id="countdownSound" src="sounds/countdown.mp3" preload="auto"></audio>
   <audio id="buzzerSound" src="sounds/buzzer.mp3" preload="auto"></audio>
   <div id="hint">control.htmlで操作 | F:全画面</div>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
 const $ = s=>document.getElementById(s);
 const timerMinEl=$('timerMin'), timerSecEl=$('timerSec'), scoreRedEl=$('scoreRed'), scoreBlueEl=$('scoreBlue'), nameRedEl=$('nameRed'), nameBlueEl=$('nameBlue'), boardWrap=$('boardWrap'), hintEl=$('hint'), countdownOverlay=$('countdownOverlay'), countdownText=$('countdownText');
@@ -211,6 +212,38 @@ const STORAGE_KEY='scoreboard-state-v2', CHANNEL_NAME='scoreboard';
 const TEST_START_SECONDS = 0;
 let totalSeconds=3*60, remaining=TEST_START_SECONDS, isRunning=false, scores={red:0,blue:0}, names={red:"チームA",blue:"チームB"}, timerId=null;
 let bc=null; try{ bc=new BroadcastChannel(CHANNEL_NAME);}catch{}
+// --- cross-device sync via public MQTT (room separated) ---
+const _qp = new URLSearchParams(location.search);
+let ROOM_ID = _qp.get('room') || 'default';
+let MQTT_TOPIC = 'robocon-score-board/' + ROOM_ID + '/sync';
+const CLIENT_ID = 'd-' + Math.random().toString(36).slice(2,9);
+let mqttClient = null;
+function mqttPublish(m){ try{ if(mqttClient && mqttClient.connected){ m._from=CLIENT_ID; mqttClient.publish(MQTT_TOPIC, JSON.stringify(m)); } }catch{} }
+function mqttHandle(m){
+  if(!m||!m.type) return;
+  if(m._from===CLIENT_ID) return;
+  if(m.type==='state'&&m.state)applyState(m.state);
+  else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); }
+}
+function mqttInit(){
+  try{
+    if(typeof mqtt==='undefined') return;
+    if(mqttClient) try{ mqttClient.end(true); }catch{}
+    MQTT_TOPIC = 'robocon-score-board/' + ROOM_ID + '/sync';
+    mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', { reconnectPeriod: 2000, connectTimeout: 8000, clientId: CLIENT_ID });
+    mqttClient.on('connect', ()=>{ try{ mqttClient.subscribe(MQTT_TOPIC); }catch{} updateMqttHint(true); });
+    mqttClient.on('reconnect', ()=>updateMqttHint(false));
+    mqttClient.on('close', ()=>updateMqttHint(false));
+    mqttClient.on('error', ()=>updateMqttHint(false));
+    mqttClient.on('message', (t, buf)=>{ try{ mqttHandle(JSON.parse(buf.toString())); }catch{} });
+  }catch{}
+}
+function updateMqttHint(ok){
+  try{
+    const base='control.htmlで操作 | F:全画面';
+    hintEl.textContent = base + ' | room:' + ROOM_ID + (ok ? ' ●' : ' ○');
+  }catch{}
+}
 let isCounting=false;
 let countdownIds=[];
 let lastCountdownPlay=-1;
@@ -221,12 +254,14 @@ function showCountdown(text, isNumber){
   const msg={type:'countdown', text, isNumber};
   if(bc) try{bc.postMessage(msg)}catch{}
   if(window.opener) try{window.opener.postMessage(msg,'*')}catch{}
+  mqttPublish({type:'countdown', text, isNumber});
 }
 function hideCountdown(){
   countdownOverlay.classList.remove('active');
   const msg={type:'countdown', hide:true};
   if(bc) try{bc.postMessage(msg)}catch{}
   if(window.opener) try{window.opener.postMessage(msg,'*')}catch{}
+  mqttPublish({type:'countdown', hide:true});
 }
 function clearCountdown(){
   countdownIds.forEach(id=>clearTimeout(id));
@@ -279,7 +314,7 @@ function renderScores(){
 function renderAll(){ renderTimer(); renderScores(); }
 function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names})); }catch{} }
 function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=JSON.parse(r); if(s.names)names=s.names; if(s.scores)scores=s.scores; if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; else if(s.remaining!==undefined) remaining=Math.min(s.remaining, totalSeconds); if(s.isRunning!==undefined)isRunning=s.isRunning; } else if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; }catch{} if(TEST_START_SECONDS!==0) remaining=TEST_START_SECONDS; }
-function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
+function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; mqttPublish({type:'tick',remaining,isRunning}); try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
 let countdownAudio=document.getElementById('countdownSound');
 let buzzerAudio=document.getElementById('buzzerSound');
 let countdownBuffer=null;
@@ -400,7 +435,8 @@ setTimeout(showHint,600);
 load(); renderAll();
 if(!isRunning && remaining===0) showCountdown('READY', false);
 if(isRunning) timerId=setInterval(tick,1000);
-setTimeout(()=>{ const m={type:'display-ready'}; if(bc)try{bc.postMessage(m)}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} },300);
+setTimeout(()=>{ const m={type:'display-ready'}; if(bc)try{bc.postMessage(m)}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} mqttPublish({type:'display-ready'}); },300);
+mqttInit(); updateMqttHint(false);
 </script>
 </body>
 </html>
