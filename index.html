@@ -226,7 +226,7 @@ function mqttHandle(m){
   if(!m||!m.type) return;
   if(m._from===CLIENT_ID) return;
   if(m.type==='state'&&m.state)applyState(m.state);
-  else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); }
+  else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='settingStart')startSetting(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); }
 }
 const MQTT_BROKERS = [
   'wss://mqtt.eclipseprojects.io:443/mqtt',
@@ -277,6 +277,8 @@ function updateMqttHint(){
 let isCounting=false;
 let countdownIds=[];
 let lastCountdownPlay=-1;
+let isSetting=false, settingTimerId=null, settingEndsAt=0;
+const SETTING_SECONDS=60;
 function showCountdown(text, isNumber){
   countdownText.textContent=text;
   countdownText.className=isNumber?'countdown-text number':'countdown-text';
@@ -397,12 +399,14 @@ let countdownAudio=document.getElementById('countdownSound');
 let buzzerAudio=document.getElementById('buzzerSound');
 let countdownBuffer=null;
 let buzzerBuffer=null;
+let whistleBuffer=null;
 let audioCtx2=null;
 try{
   const AC = window.AudioContext||window.webkitAudioContext;
   if(AC) audioCtx2=new AC();
   fetch('sounds/countdown.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{countdownBuffer=buf;}).catch(()=>{})).catch(()=>{});
   fetch('sounds/buzzer.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{buzzerBuffer=buf;}).catch(()=>{})).catch(()=>{});
+  fetch('sounds/whistle.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{whistleBuffer=buf;}).catch(()=>{})).catch(()=>{});
 }catch{}
 function unlockAudio(){
   try{
@@ -443,6 +447,33 @@ async function playCountdownSound(){
     }
   }catch(e){ console.log('playCountdownSound error', e); }
 }
+function playWhistle(long){
+  try{
+    let ctx = audioCtx2;
+    if(!ctx){ try{ const AC=window.AudioContext||window.webkitAudioContext; if(AC) ctx=audioCtx2=new AC(); }catch{} }
+    if(!ctx) return;
+    if(ctx.state==='suspended') ctx.resume().catch(()=>{});
+    if(whistleBuffer){
+      const src=ctx.createBufferSource();
+      src.buffer=whistleBuffer;
+      src.connect(ctx.destination);
+      src.start();
+      return;
+    }
+    const dur = long?1.4:0.7;
+    const t=ctx.currentTime;
+    const o=ctx.createOscillator(), g=ctx.createGain(), lfo=ctx.createOscillator(), lg=ctx.createGain();
+    o.type='sine'; o.frequency.value=2350;
+    lfo.type='sine'; lfo.frequency.value=28; lg.gain.value=220;
+    lfo.connect(lg); lg.connect(o.frequency);
+    o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.5,t+0.05);
+    g.gain.setValueAtTime(0.5,t+Math.max(0.06,dur-0.2));
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); lfo.start(t); o.stop(t+dur+0.05); lfo.stop(t+dur+0.05);
+  }catch(e){ console.log('playWhistle error', e); }
+}
 async function playBuzzerSound(){
   try{
     let ctx = audioCtx2;
@@ -469,8 +500,39 @@ async function playBuzzerSound(){
   }catch(e){ console.log('playBuzzerSound error', e); }
 }
 function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); if([30,60,120,150].includes(remaining)) playBuzzerSound(); broadcastTick(); if(remaining>=totalSeconds){stop();save();} }
+function publishSetting(){
+  const active=isSetting, endsAt=settingEndsAt;
+  const m={type:'setting', active, endsAt};
+  if(bc) try{bc.postMessage(m)}catch{};
+  if(window.opener) try{window.opener.postMessage(m,'*')}catch{};
+  mqttPublish({type:'setting', active, endsAt});
+  try{ if(NET==='firebase'&&typeof fbDb!=='undefined'&&fbDb) fbDb.ref(fbBase()+'/setting').set({active, endsAt, at:Date.now()}); }catch{}
+}
+function startSetting(){
+  if(isSetting||isRunning||isCounting) return;
+  if(remaining>0||remaining>=totalSeconds) return;
+  isSetting=true;
+  settingEndsAt=Date.now()+SETTING_SECONDS*1000;
+  showCountdown('READY', false);
+  playWhistle(false);
+  publishSetting();
+  if(settingTimerId) clearTimeout(settingTimerId);
+  settingTimerId=setTimeout(endSetting, SETTING_SECONDS*1000);
+}
+function endSetting(){
+  if(!isSetting) return;
+  isSetting=false; settingTimerId=null;
+  playWhistle(true);
+  showCountdown('READY', false);
+  publishSetting();
+}
+function clearSetting(){
+  if(settingTimerId) clearTimeout(settingTimerId);
+  settingTimerId=null;
+  if(isSetting){ isSetting=false; settingEndsAt=0; publishSetting(); }
+}
 function start(){
-  if(isRunning||isCounting) return;
+  if(isRunning||isCounting||isSetting) return;
   if(remaining>=totalSeconds) return;
   if(remaining>0){
     // 再開はカウントダウンなし
@@ -481,7 +543,7 @@ function start(){
   }
   startCountdownSequence();
 }
-function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; clearCountdown(); save(); broadcastTick(); }
+function stop(){ if(timerId)clearInterval(timerId); timerId=null; isRunning=false; clearCountdown(); clearSetting(); save(); broadcastTick(); }
 function reset(){
   clearCountdown();
   stop();
@@ -503,8 +565,8 @@ function applyState(s){
   }
   if(s.scores)scores=s.scores; if(s.names)names=s.names; renderAll(); save();
 }
-if(bc) bc.onmessage=e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } };
-window.addEventListener('message',e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } });
+if(bc) bc.onmessage=e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='settingStart')startSetting(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } };
+window.addEventListener('message',e=>{ const m=e.data; if(!m||!m.type)return; if(m.type==='state'&&m.state)applyState(m.state); else if(m.type==='cmd'){ if(m.action==='start')start(); else if(m.action==='pause')stop(); else if(m.action==='reset')reset(); else if(m.action==='settingStart')startSetting(); else if(m.action==='setTime')setTime(Math.floor((m.initialSeconds||0)/60),(m.initialSeconds||0)%60); else if(m.action==='fullscreen')boardWrap.requestFullscreen?.(); } });
 window.addEventListener('storage',e=>{ if(e.key===STORAGE_KEY&&e.newValue){ try{applyState(JSON.parse(e.newValue))}catch{} } });
 document.addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='f'){ if(!document.fullscreenElement)boardWrap.requestFullscreen?.(); else document.exitFullscreen?.(); } });
 boardWrap.addEventListener('dblclick',()=>{ if(!document.fullscreenElement)boardWrap.requestFullscreen?.(); else document.exitFullscreen?.(); });

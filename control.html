@@ -246,6 +246,7 @@
       <button class="btn btn-primary" id="btnStart">▶ スタート</button>
       <button class="btn btn-dark" id="btnPause" disabled>⏸ 一時停止</button>
       <button class="btn btn-dark" id="btnReset">↺ リセット</button>
+      <button class="btn btn-dark" id="btnSetting">セッティング開始</button>
     </div>
     <div class="score-controls">
       <div class="team-control red">
@@ -315,6 +316,7 @@ const inputNameBlue = document.getElementById('inputNameBlue');
 const btnStart = document.getElementById('btnStart');
 const btnPause = document.getElementById('btnPause');
 const btnReset = document.getElementById('btnReset');
+const btnSetting = document.getElementById('btnSetting');
 const btnOpenDisplay = document.getElementById('btnOpenDisplay');
 const statusText = document.getElementById('statusText');
 
@@ -358,6 +360,7 @@ function onRemoteMsg(msg){
     if(msg.hide) hidePreviewCountdown();
     else showPreviewCountdown(msg.text, msg.isNumber);
   } else if(msg.type==='display-ready'){ saveState(); statusText.textContent = '表示画面と接続しました'; }
+  else if(msg.type==='setting'){ onSettingMsg(msg); }
   else if(msg.type==='state' && msg.state){
     if(msg.state.scores) state.scores=msg.state.scores;
     if(msg.state.names) state.names=msg.state.names;
@@ -470,6 +473,12 @@ function fbInit(){
     fbRefs.push(cd);
     const ping = fbDb.ref(base + '/displayPing');
     ping.on('value', snap=>{ const v=snap.val(); if(!v||!v.at||v.at===lastPingAt) return; lastPingAt=v.at; saveState(); statusText.textContent = '表示画面と接続しました'; });
+    const setting = fbDb.ref(base + '/setting');
+    setting.on('value', snap=>{
+      const v=snap.val(); if(!v) return;
+      onRemoteMsg({type:'setting', active:!!v.active, endsAt:v.endsAt||0, _from:'firebase'});
+    });
+    fbRefs.push(setting);
     fbRefs.push(ping);
     const conn = fbDb.ref('.info/connected');
     conn.on('value', snap=>{ fbStatus(snap.val() ? '●接続中' : '○切断'); });
@@ -534,6 +543,18 @@ function renderPreview() {
     else if(state.remaining>=180) pt.classList.add('finished');
   }
 }
+let settingActive=false, settingEndsAt=0;
+function onSettingMsg(msg){
+  settingActive=!!msg.active; settingEndsAt=msg.endsAt||0;
+  if(!settingActive) statusText.textContent='セッティング終了';
+}
+setInterval(()=>{
+  if(settingActive && settingEndsAt){
+    const r=Math.max(0, Math.ceil((settingEndsAt-Date.now())/1000));
+    if(r>0) statusText.textContent=`セッティング中 残り${r}秒`;
+    else { settingActive=false; statusText.textContent='セッティング終了'; }
+  }
+}, 500);
 function renderAndSave() {
   renderPreview();
   saveState();
@@ -554,6 +575,9 @@ btnReset.addEventListener('click', ()=>{
   renderAndSave();
   showPreviewCountdown('READY', false);
   broadcastCmd('reset');
+});
+btnSetting.addEventListener('click', ()=>{
+  broadcastCmd('settingStart');
 });
 // Scores
 document.querySelectorAll('[data-team][data-delta]').forEach(btn=>{
@@ -598,7 +622,7 @@ if (bc) {
     } else if (msg.type==='display-ready') {
       saveState();
       statusText.textContent = '表示画面と接続しました';
-    } else if (msg.type==='state') {
+    } else if (msg.type==='setting') { onSettingMsg(msg); } else if (msg.type==='state') {
       // 同期
       if(msg.state.scores) state.scores=msg.state.scores;
       if(msg.state.names) state.names=msg.state.names;
@@ -622,6 +646,7 @@ window.addEventListener('message', (e)=>{
     else showPreviewCountdown(msg.text, msg.isNumber);
   } else if (msg.type==='display-ready') {
     saveState();
+  } else if (msg.type==='setting') { onSettingMsg(msg);
   } else if (msg.type==='state' && msg.state) {
     if(msg.state.scores) state.scores=msg.state.scores;
     if(msg.state.names) state.names=msg.state.names;
