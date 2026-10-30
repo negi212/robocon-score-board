@@ -470,7 +470,7 @@ async function playBuzzerSound(){
     }
   }catch(e){ console.log('playBuzzerSound error', e); }
 }
-function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); if([30,60,120,150].includes(remaining)) playBuzzerSound(); broadcastTick(); if(remaining>=totalSeconds){stop();save();} }
+function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); if([27,57,117,147].includes(remaining)) playBuzzerSound(); broadcastTick(); if(remaining>=totalSeconds){stop();save();} }
 function publishSetting(){
   const active=isSetting, endsAt=settingEndsAt;
   const m={type:'setting', active, endsAt};
