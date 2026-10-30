@@ -202,6 +202,7 @@
     <div id="countdownOverlay" class="countdown-overlay"><div id="countdownText" class="countdown-text"></div></div>
   <audio id="countdownSound" src="sounds/countdown.mp3" preload="auto"></audio>
   <audio id="buzzerSound" src="sounds/dopa.wav" preload="auto"></audio>
+  <audio id="settingSound" src="sounds/buzzer.mp3" preload="auto"></audio>
   <div id="hint">control.htmlで操作 | F:全画面</div>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script src="firebase-config.js"></script>
@@ -397,19 +398,22 @@ function load(){ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ const s=
 function broadcastTick(){ const m={type:'tick',remaining,isRunning}; if(bc)try{bc.postMessage(m)}catch{}; mqttPublish({type:'tick',remaining,isRunning}); fbPublishTick(); try{localStorage.setItem(STORAGE_KEY, JSON.stringify({initialSeconds:totalSeconds,remaining,isRunning,scores,names}))}catch{}; if(window.opener)try{window.opener.postMessage(m,'*')}catch{} }
 let countdownAudio=document.getElementById('countdownSound');
 let buzzerAudio=document.getElementById('buzzerSound');
+let settingAudio=document.getElementById('settingSound');
 let countdownBuffer=null;
 let buzzerBuffer=null;
+let settingBuffer=null;
 let audioCtx2=null;
 try{
   const AC = window.AudioContext||window.webkitAudioContext;
   if(AC) audioCtx2=new AC();
   fetch('sounds/countdown.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{countdownBuffer=buf;}).catch(()=>{})).catch(()=>{});
   fetch('sounds/dopa.wav').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{buzzerBuffer=buf;}).catch(()=>{})).catch(()=>{});
+  fetch('sounds/buzzer.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{settingBuffer=buf;}).catch(()=>{})).catch(()=>{});
 }catch{}
 function unlockAudio(){
   try{
     if(audioCtx2 && audioCtx2.state==='suspended') audioCtx2.resume();
-    for(const a of [countdownAudio, buzzerAudio]){
+    for(const a of [countdownAudio, buzzerAudio, settingAudio]){
       if(a) {
         a.muted=true;
         const p=a.play();
@@ -470,6 +474,31 @@ async function playBuzzerSound(){
     }
   }catch(e){ console.log('playBuzzerSound error', e); }
 }
+async function playSettingSound(){
+  try{
+    let ctx = audioCtx2;
+    if(!ctx){
+      try{ const AC=window.AudioContext||window.webkitAudioContext; if(AC) ctx=audioCtx2=new AC(); }catch{}
+    }
+    if(ctx){
+      if(ctx.state==='suspended') await ctx.resume().catch(()=>{});
+      if(settingBuffer){
+        const src=ctx.createBufferSource();
+        src.buffer=settingBuffer;
+        src.connect(ctx.destination);
+        src.start();
+        return;
+      }
+    }
+    let a = settingAudio || document.getElementById('settingSound');
+    if(a){
+      a.muted=false;
+      a.currentTime=0;
+      const p=a.play();
+      if(p) await p.catch(()=>{});
+    }
+  }catch(e){ console.log('playSettingSound error', e); }
+}
 function tick(){ if(remaining>=totalSeconds){stop();remaining=totalSeconds;renderTimer();broadcastTick();return} remaining++; renderTimer(); if(remaining===177) playCountdownSound(); if([27,57,117,147].includes(remaining)) playBuzzerSound(); broadcastTick(); if(remaining>=totalSeconds){stop();save();} }
 function publishSetting(){
   const active=isSetting, endsAt=settingEndsAt;
@@ -485,7 +514,7 @@ function startSetting(){
   isSetting=true;
   settingEndsAt=Date.now()+SETTING_SECONDS*1000;
   showCountdown('READY', false);
-  playBuzzerSound();
+  playSettingSound();
   publishSetting();
   if(settingTimerId) clearTimeout(settingTimerId);
   settingTimerId=setTimeout(endSetting, SETTING_SECONDS*1000);
