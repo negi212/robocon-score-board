@@ -201,7 +201,7 @@
   </div>
     <div id="countdownOverlay" class="countdown-overlay"><div id="countdownText" class="countdown-text"></div></div>
   <audio id="countdownSound" src="sounds/countdown.mp3" preload="auto"></audio>
-  <audio id="buzzerSound" src="sounds/buzzer.mp3" preload="auto"></audio>
+  <audio id="buzzerSound" src="sounds/dopa.wav" preload="auto"></audio>
   <div id="hint">control.htmlで操作 | F:全画面</div>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script src="firebase-config.js"></script>
@@ -404,7 +404,7 @@ try{
   const AC = window.AudioContext||window.webkitAudioContext;
   if(AC) audioCtx2=new AC();
   fetch('sounds/countdown.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{countdownBuffer=buf;}).catch(()=>{})).catch(()=>{});
-  fetch('sounds/buzzer.mp3').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{buzzerBuffer=buf;}).catch(()=>{})).catch(()=>{});
+  fetch('sounds/dopa.wav').then(r=>r.arrayBuffer()).then(b=>audioCtx2.decodeAudioData(b).then(buf=>{buzzerBuffer=buf;}).catch(()=>{})).catch(()=>{});
 }catch{}
 function unlockAudio(){
   try{
